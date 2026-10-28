@@ -183,7 +183,7 @@ class _InquiriesScreenState extends ConsumerState<InquiriesScreen> {
                             crossAxisCount: isVeryWide ? 3 : 2,
                             crossAxisSpacing: 12,
                             mainAxisSpacing: 8,
-                            mainAxisExtent: 255,
+                            mainAxisExtent: 215,
                           ),
                           itemCount: filtered.length,
                           itemBuilder: (context, index) {
