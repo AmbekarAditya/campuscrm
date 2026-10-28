@@ -35,7 +35,8 @@ class LocalInquiriesNotifier extends StateNotifier<List<Inquiry>> {
             phone: '+919765001122',
             email: 'ananya.d@example.com',
             status: InquiryStatus.followUp,
-            remarks: 'Asked for 2-installment fee plan. Call back on Thursday.',
+            followUpDate: DateTime.now(), // Scheduled for TODAY
+            remarks: 'Asked for 2-installment fee plan. Call back today at 4 PM.',
             createdAt: DateTime.now().subtract(const Duration(days: 1)),
           ),
           Inquiry(
@@ -87,10 +88,35 @@ class LocalInquiriesNotifier extends StateNotifier<List<Inquiry>> {
     state = [created, ...state];
   }
 
-  void updateStatus(String id, InquiryStatus newStatus) {
+  void updateStatus(
+    String id,
+    InquiryStatus newStatus, {
+    DateTime? followUpDate,
+  }) {
     state = [
       for (final item in state)
-        if (item.id == id) item.copyWith(status: newStatus) else item,
+        if (item.id == id)
+          item.copyWith(
+            status: newStatus,
+            followUpDate: newStatus == InquiryStatus.followUp
+                ? (followUpDate ?? item.followUpDate ?? DateTime.now())
+                : item.followUpDate,
+          )
+        else
+          item,
+    ];
+  }
+
+  void updateFollowUpDate(String id, DateTime? followUpDate) {
+    state = [
+      for (final item in state)
+        if (item.id == id)
+          item.copyWith(
+            followUpDate: followUpDate,
+            clearFollowUpDate: followUpDate == null,
+          )
+        else
+          item,
     ];
   }
 
@@ -136,6 +162,15 @@ final joinedStudentsProvider = Provider<List<Inquiry>>((ref) {
       .toList();
 });
 
+/// Pending follow-ups for a specific date (e.g. today).
+final pendingFollowUpsForDateProvider =
+    Provider.family<List<Inquiry>, DateTime>((ref, date) {
+  final List<Inquiry> inquiries =
+      ref.watch(inquiriesStreamProvider).asData?.value ??
+          ref.watch(localInquiriesProvider);
+  return inquiries.where((inq) => inq.isFollowUpDueOn(date)).toList();
+});
+
 /// Optional status filter selected on the Inquiries screen (`null` = show all).
 final inquiryStatusFilterProvider = StateProvider<InquiryStatus?>((ref) => null);
 
@@ -170,7 +205,8 @@ class InquiryRepository {
     _localNotifier.add(inquiry);
     await _logger.log(
       actorName: 'Front Desk',
-      action: 'Added new inquiry: ${inquiry.name} (${inquiry.areaCity})',
+      action:
+          'Added new inquiry: ${inquiry.name} (${inquiry.areaCity}) [${inquiry.status.label}]',
       category: 'Inquiries',
     );
     if (_collection != null) {
@@ -178,16 +214,44 @@ class InquiryRepository {
     }
   }
 
-  Future<void> updateStatus(String inquiryId, InquiryStatus newStatus) async {
-    _localNotifier.updateStatus(inquiryId, newStatus);
+  Future<void> updateStatus(
+    String inquiryId,
+    InquiryStatus newStatus, {
+    DateTime? followUpDate,
+  }) async {
+    _localNotifier.updateStatus(inquiryId, newStatus,
+        followUpDate: followUpDate);
     await _logger.log(
       actorName: 'Front Desk',
       action: 'Updated lead status to "${newStatus.label}"',
       category: 'Inquiries',
     );
     if (_collection != null) {
-      await _collection!.doc(inquiryId).update({
+      final data = <String, dynamic>{
         'status': newStatus.label,
+        'updatedAt': FieldValue.serverTimestamp(),
+      };
+      if (followUpDate != null) {
+        data['followUpDate'] = Timestamp.fromDate(followUpDate);
+      }
+      await _collection!.doc(inquiryId).update(data);
+    }
+  }
+
+  Future<void> updateFollowUpDate(
+    String inquiryId,
+    DateTime? followUpDate,
+  ) async {
+    _localNotifier.updateFollowUpDate(inquiryId, followUpDate);
+    await _logger.log(
+      actorName: 'Front Desk',
+      action: 'Updated follow-up date for lead',
+      category: 'Inquiries',
+    );
+    if (_collection != null) {
+      await _collection!.doc(inquiryId).update({
+        'followUpDate':
+            followUpDate != null ? Timestamp.fromDate(followUpDate) : null,
         'updatedAt': FieldValue.serverTimestamp(),
       });
     }

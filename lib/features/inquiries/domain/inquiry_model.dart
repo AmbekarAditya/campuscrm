@@ -61,6 +61,7 @@ class Inquiry {
   final InquiryStatus status;
   final String remarks;
   final DateTime createdAt;
+  final DateTime? followUpDate;
 
   const Inquiry({
     required this.id,
@@ -71,7 +72,16 @@ class Inquiry {
     required this.status,
     required this.remarks,
     required this.createdAt,
+    this.followUpDate,
   });
+
+  /// Returns true if this inquiry is in Follow-Up status and scheduled for [date].
+  bool isFollowUpDueOn(DateTime date) {
+    if (status != InquiryStatus.followUp || followUpDate == null) return false;
+    return followUpDate!.year == date.year &&
+        followUpDate!.month == date.month &&
+        followUpDate!.day == date.day;
+  }
 
   Inquiry copyWith({
     String? id,
@@ -82,6 +92,8 @@ class Inquiry {
     InquiryStatus? status,
     String? remarks,
     DateTime? createdAt,
+    DateTime? followUpDate,
+    bool clearFollowUpDate = false,
   }) {
     return Inquiry(
       id: id ?? this.id,
@@ -92,6 +104,8 @@ class Inquiry {
       status: status ?? this.status,
       remarks: remarks ?? this.remarks,
       createdAt: createdAt ?? this.createdAt,
+      followUpDate:
+          clearFollowUpDate ? null : (followUpDate ?? this.followUpDate),
     );
   }
 
@@ -104,12 +118,16 @@ class Inquiry {
       'status': status.label,
       'remarks': remarks,
       'createdAt': Timestamp.fromDate(createdAt),
+      'followUpDate':
+          followUpDate != null ? Timestamp.fromDate(followUpDate!) : null,
     };
   }
 
   factory Inquiry.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
     final data = doc.data() ?? {};
     final timestamp = data['createdAt'] as Timestamp?;
+    final followUpTs = data['followUpDate'] as Timestamp?;
+
     return Inquiry(
       id: doc.id,
       name: data['name'] as String? ?? 'Unknown Lead',
@@ -119,6 +137,7 @@ class Inquiry {
       status: InquiryStatus.fromString(data['status'] as String?),
       remarks: data['remarks'] as String? ?? '',
       createdAt: timestamp?.toDate() ?? DateTime.now(),
+      followUpDate: followUpTs?.toDate(),
     );
   }
 }

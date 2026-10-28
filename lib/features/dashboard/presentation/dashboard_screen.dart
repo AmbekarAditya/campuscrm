@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../academics/data/batch_repository.dart';
 import '../../academics/domain/batch_model.dart';
@@ -29,6 +30,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     return a.year == b.year && a.month == b.month && a.day == b.day;
   }
 
+  Future<void> _launchActionUrl(Uri uri) async {
+    try {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } catch (_) {}
+  }
+
   @override
   Widget build(BuildContext context) {
     final allBatches = ref.watch(localBatchesProvider);
@@ -40,6 +47,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final newLeadsCount = allInquiries
         .where((inq) => inq.status == InquiryStatus.newLead)
         .length;
+
+    // Follow-ups pending on the selected date (e.g. Today)
+    final pendingFollowUps = allInquiries
+        .where((inq) => inq.isFollowUpDueOn(_selectedDate))
+        .toList();
 
     // Batches whose Date From - Date To includes the selected dashboard date
     final todaysBatches = allBatches
@@ -72,7 +84,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   setState(() => _selectedDate = picked);
                 }
               },
-              icon: const Icon(Icons.calendar_month_rounded),
+              icon: const Icon(Icons.calendar_month_rounded, size: 18),
               label: Text(
                 isToday
                     ? 'Today: ${_formatShortDate(_selectedDate)}'
@@ -91,24 +103,24 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 allInquiries,
                 attendanceMap,
               ),
-              icon: const Icon(Icons.fact_check_rounded, size: 26),
+              icon: const Icon(Icons.fact_check_rounded, size: 24),
               label: const Text(
                 'Mark Daily Attendance',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
               ),
               backgroundColor: const Color(0xFF1E40AF),
               foregroundColor: Colors.white,
             ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 96),
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 96),
         children: [
           // Prominent Dashboard Date Bar
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
               color: const Color(0xFFEFF6FF),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFBFDBFE), width: 1.5),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0xFFBFDBFE), width: 1.2),
             ),
             child: Wrap(
               spacing: 12,
@@ -122,16 +134,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     const Icon(
                       Icons.today_rounded,
                       color: Color(0xFF1E40AF),
-                      size: 28,
+                      size: 26,
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 10),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           isToday ? "Today's Date" : 'Selected Schedule Date',
                           style: const TextStyle(
-                            fontSize: 13,
+                            fontSize: 12,
                             fontWeight: FontWeight.w600,
                             color: Color(0xFF1D4ED8),
                           ),
@@ -168,7 +180,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           setState(() => _selectedDate = picked);
                         }
                       },
-                      icon: const Icon(Icons.edit_calendar_rounded),
+                      icon: const Icon(Icons.edit_calendar_rounded, size: 18),
                       label: const Text('Change Date'),
                     ),
                   ],
@@ -176,15 +188,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               ],
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
 
           // Action Items Alert Widget
           Container(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: const Color(0xFFFEF2F2),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFFECACA), width: 1.5),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0xFFFECACA), width: 1.2),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -192,25 +204,37 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 Row(
                   children: [
                     const Icon(Icons.warning_amber_rounded,
-                        color: Color(0xFFDC2626), size: 28),
-                    const SizedBox(width: 10),
+                        color: Color(0xFFDC2626), size: 24),
+                    const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         'Action Items Requiring Attention',
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
                               color: const Color(0xFF991B1B),
+                              fontSize: 17,
                             ),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 10),
                 const _ActionAlertRow(
                   badgeText: '3 Overdue',
                   badgeColor: Color(0xFFDC2626),
                   description: 'Fee installments due this week need follow-up.',
                 ),
-                const SizedBox(height: 8),
+                if (pendingFollowUps.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  _ActionAlertRow(
+                    badgeText:
+                        '${pendingFollowUps.length} Follow-ups ${isToday ? "Today" : ""}',
+                    badgeColor: const Color(0xFFD97706),
+                    description: isToday
+                        ? '${pendingFollowUps.length} student inquiry follow-up(s) scheduled for today.'
+                        : '${pendingFollowUps.length} follow-up(s) scheduled for ${_formatShortDate(_selectedDate)}.',
+                  ),
+                ],
+                const SizedBox(height: 6),
                 _ActionAlertRow(
                   badgeText: '$newLeadsCount New Leads',
                   badgeColor: const Color(0xFF2563EB),
@@ -219,7 +243,98 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               ],
             ),
           ),
-          const SizedBox(height: 24),
+
+          // Follow-ups Pending Today section
+          if (pendingFollowUps.isNotEmpty) ...[
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                const Icon(
+                  Icons.phone_callback_rounded,
+                  color: Color(0xFFD97706),
+                  size: 22,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  isToday
+                      ? "Follow-ups Pending Today (${pendingFollowUps.length})"
+                      : "Follow-ups on ${_formatShortDate(_selectedDate)} (${pendingFollowUps.length})",
+                  style: Theme.of(context).textTheme.headlineMedium,
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            ...pendingFollowUps.map((lead) {
+              return Card(
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFEF3C7),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(
+                          Icons.person_pin_rounded,
+                          color: Color(0xFFB45309),
+                          size: 22,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              lead.name,
+                              style: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF0F172A),
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              '${lead.areaCity} • ${lead.remarks.isEmpty ? "No follow-up notes" : lead.remarks}',
+                              style: const TextStyle(
+                                fontSize: 13,
+                                color: Color(0xFF475569),
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.phone_in_talk_rounded,
+                            color: Color(0xFF2563EB), size: 20),
+                        tooltip: 'Call ${lead.name}',
+                        onPressed: () =>
+                            _launchActionUrl(Uri.parse('tel:${lead.phone}')),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.chat_bubble_rounded,
+                            color: Color(0xFF16A34A), size: 20),
+                        tooltip: 'WhatsApp ${lead.name}',
+                        onPressed: () {
+                          final clean =
+                              lead.phone.replaceAll(RegExp(r'[^0-9]'), '');
+                          _launchActionUrl(
+                              Uri.parse('https://wa.me/$clean'));
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }),
+          ],
+
+          const SizedBox(height: 20),
 
           // Today's Classes Header
           Row(
@@ -239,7 +354,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     const Text(
                       'Click any class below to mark attendance for its enrolled students.',
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: 13,
                         color: Color(0xFF475569),
                         fontWeight: FontWeight.w500,
                       ),
@@ -249,16 +364,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
 
           if (todaysBatches.isEmpty)
             Card(
               child: Padding(
-                padding: const EdgeInsets.all(24),
+                padding: const EdgeInsets.all(20),
                 child: Text(
                   'No batches scheduled for ${_formatShortDate(_selectedDate)}. Create a batch in the "Batches" tab with dates covering this day.',
                   style: const TextStyle(
-                    fontSize: 16,
+                    fontSize: 15,
                     color: Color(0xFF64748B),
                   ),
                 ),
@@ -294,7 +409,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
           // Other / Upcoming Batches (outside selected date)
           if (otherBatches.isNotEmpty) ...[
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
             Text(
               'Other Scheduled Batches',
               style: Theme.of(context).textTheme.titleLarge,
@@ -307,27 +422,29 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               return Card(
                 child: ListTile(
                   contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   title: Text(
                     batch.name,
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                   subtitle: Padding(
-                    padding: const EdgeInsets.only(top: 6),
+                    padding: const EdgeInsets.only(top: 4),
                     child: Text(
                       '${_formatShortDate(batch.startDate)} – ${_formatShortDate(batch.endDate)}  •  ${batch.timings}  •  ${enrolledStudents.length} Student(s)',
+                      style: const TextStyle(fontSize: 13),
                     ),
                   ),
                   trailing: Container(
                     padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
                       color: const Color(0xFFF1F5F9),
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Text(
                       'Not Active Today',
                       style: TextStyle(
+                        fontSize: 12,
                         color: Color(0xFF475569),
                         fontWeight: FontWeight.w600,
                       ),
@@ -435,7 +552,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     required List<Inquiry> enrolledStudents,
     required Set<String>? existingPresentIds,
   }) async {
-    // Default all enrolled students to Present if attendance hasn't been marked yet today
     final presentIds = existingPresentIds != null
         ? Set<String>.from(existingPresentIds)
         : enrolledStudents.map((s) => s.id).toSet();
@@ -454,7 +570,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   Text(
                     'Date: ${_formatFullDate(_selectedDate)}  |  ${batch.timings}',
                     style: const TextStyle(
-                      fontSize: 14,
+                      fontSize: 13,
                       fontWeight: FontWeight.w500,
                       color: Color(0xFF475569),
                     ),
@@ -569,7 +685,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         );
                       }
                     },
-                    icon: const Icon(Icons.check_circle_outline),
+                    icon: const Icon(Icons.check_circle_outline, size: 18),
                     label: const Text('Save Attendance'),
                   ),
               ],
@@ -597,26 +713,26 @@ class _ActionAlertRow extends StatelessWidget {
     return Row(
       children: [
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
           decoration: BoxDecoration(
             color: badgeColor,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(6),
           ),
           child: Text(
             badgeText,
             style: const TextStyle(
               color: Colors.white,
               fontWeight: FontWeight.w700,
-              fontSize: 13,
+              fontSize: 12,
             ),
           ),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 10),
         Expanded(
           child: Text(
             description,
             style: const TextStyle(
-              fontSize: 15,
+              fontSize: 14,
               fontWeight: FontWeight.w500,
               color: Color(0xFF7F1D1D),
             ),
@@ -659,12 +775,12 @@ class _TodayClassTile extends StatelessWidget {
     return Card(
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(14),
         child: Padding(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(16),
           child: Wrap(
-            spacing: 16,
-            runSpacing: 12,
+            spacing: 14,
+            runSpacing: 10,
             alignment: WrapAlignment.spaceBetween,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
@@ -675,9 +791,9 @@ class _TodayClassTile extends StatelessWidget {
                     batchName,
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
                   Wrap(
-                    spacing: 12,
+                    spacing: 10,
                     runSpacing: 6,
                     children: [
                       Row(
@@ -685,13 +801,14 @@ class _TodayClassTile extends StatelessWidget {
                         children: [
                           const Icon(
                             Icons.access_time_filled_rounded,
-                            size: 17,
+                            size: 15,
                             color: Color(0xFF7E22CE),
                           ),
-                          const SizedBox(width: 5),
+                          const SizedBox(width: 4),
                           Text(
                             timeSlot,
                             style: const TextStyle(
+                              fontSize: 13,
                               fontWeight: FontWeight.w600,
                               color: Color(0xFF7E22CE),
                             ),
@@ -703,13 +820,14 @@ class _TodayClassTile extends StatelessWidget {
                         children: [
                           const Icon(
                             Icons.date_range_rounded,
-                            size: 17,
+                            size: 15,
                             color: Color(0xFF1D4ED8),
                           ),
-                          const SizedBox(width: 5),
+                          const SizedBox(width: 4),
                           Text(
                             'Batch Dates: $dateRange',
                             style: const TextStyle(
+                              fontSize: 13,
                               fontWeight: FontWeight.w600,
                               color: Color(0xFF1D4ED8),
                             ),
@@ -721,13 +839,14 @@ class _TodayClassTile extends StatelessWidget {
                         children: [
                           const Icon(
                             Icons.people_alt_rounded,
-                            size: 17,
+                            size: 15,
                             color: Color(0xFF15803D),
                           ),
-                          const SizedBox(width: 5),
+                          const SizedBox(width: 4),
                           Text(
                             '$studentCount Joined Student(s)',
                             style: const TextStyle(
+                              fontSize: 13,
                               fontWeight: FontWeight.w600,
                               color: Color(0xFF15803D),
                             ),
@@ -737,7 +856,7 @@ class _TodayClassTile extends StatelessWidget {
                     ],
                   ),
                   if (studentNames.isNotEmpty) ...[
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 4),
                     Text(
                       'Students: $studentNames',
                       style: Theme.of(context).textTheme.bodyMedium,
@@ -747,13 +866,13 @@ class _TodayClassTile extends StatelessWidget {
               ),
               Container(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
                   color: badgeColor.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(10),
                   border: Border.all(
                     color: badgeColor.withValues(alpha: 0.35),
-                    width: 1.5,
+                    width: 1.2,
                   ),
                 ),
                 child: Row(
@@ -764,9 +883,9 @@ class _TodayClassTile extends StatelessWidget {
                           ? Icons.check_circle_rounded
                           : Icons.fact_check_outlined,
                       color: badgeColor,
-                      size: 20,
+                      size: 18,
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 6),
                     Text(
                       isAttendanceMarked
                           ? 'Present: $presentCount/$studentCount ($scheduleDateLabel)'
@@ -774,7 +893,7 @@ class _TodayClassTile extends StatelessWidget {
                       style: TextStyle(
                         color: badgeColor,
                         fontWeight: FontWeight.w700,
-                        fontSize: 14,
+                        fontSize: 13,
                       ),
                     ),
                   ],

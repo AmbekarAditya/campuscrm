@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../domain/inquiry_model.dart';
 
@@ -6,12 +7,14 @@ class InquiryCard extends StatefulWidget {
   final Inquiry inquiry;
   final ValueChanged<InquiryStatus> onStatusChanged;
   final ValueChanged<String> onRemarksSaved;
+  final ValueChanged<DateTime>? onFollowUpDateChanged;
 
   const InquiryCard({
     super.key,
     required this.inquiry,
     required this.onStatusChanged,
     required this.onRemarksSaved,
+    this.onFollowUpDateChanged,
   });
 
   @override
@@ -40,6 +43,44 @@ class _InquiryCardState extends State<InquiryCard> {
   void dispose() {
     _remarksController.dispose();
     super.dispose();
+  }
+
+  String _formatDate(DateTime date) {
+    return DateFormat('dd MMM yyyy').format(date);
+  }
+
+  bool _isToday(DateTime date) {
+    final now = DateTime.now();
+    return date.year == now.year && date.month == now.month && date.day == now.day;
+  }
+
+  Future<void> _pickFollowUpDate(BuildContext context) async {
+    final initial = widget.inquiry.followUpDate ?? DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initial,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2032),
+    );
+    if (picked != null && widget.onFollowUpDateChanged != null) {
+      widget.onFollowUpDateChanged!(picked);
+    }
+  }
+
+  Future<void> _handleStatusChange(InquiryStatus newStatus) async {
+    if (newStatus == InquiryStatus.followUp && widget.inquiry.followUpDate == null) {
+      // Prompt for follow-up date when switching to Follow-Up status
+      final picked = await showDatePicker(
+        context: context,
+        initialDate: DateTime.now(),
+        firstDate: DateTime.now().subtract(const Duration(days: 30)),
+        lastDate: DateTime(2032),
+      );
+      if (picked != null && widget.onFollowUpDateChanged != null) {
+        widget.onFollowUpDateChanged!(picked);
+      }
+    }
+    widget.onStatusChanged(newStatus);
   }
 
   Future<void> _launchActionUrl(BuildContext context, Uri uri) async {
@@ -71,6 +112,9 @@ class _InquiryCardState extends State<InquiryCard> {
   Widget build(BuildContext context) {
     final inquiry = widget.inquiry;
     final status = inquiry.status;
+    final isFollowUp = status == InquiryStatus.followUp;
+    final followUpDate = inquiry.followUpDate ?? DateTime.now();
+    final isDueToday = isFollowUp && _isToday(followUpDate);
 
     return Card(
       child: Padding(
@@ -157,7 +201,7 @@ class _InquiryCardState extends State<InquiryCard> {
                       ),
                       onChanged: (InquiryStatus? newStatus) {
                         if (newStatus != null && newStatus != status) {
-                          widget.onStatusChanged(newStatus);
+                          _handleStatusChange(newStatus);
                         }
                       },
                       items: InquiryStatus.values.map((itemStatus) {
@@ -193,6 +237,64 @@ class _InquiryCardState extends State<InquiryCard> {
               ],
             ),
 
+            // Follow-Up Date Tag on Card (if status is Follow-Up)
+            if (isFollowUp) ...[
+              const SizedBox(height: 6),
+              InkWell(
+                onTap: () => _pickFollowUpDate(context),
+                borderRadius: BorderRadius.circular(8),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: isDueToday
+                        ? const Color(0xFFFEF3C7)
+                        : const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: isDueToday
+                          ? const Color(0xFFF59E0B)
+                          : const Color(0xFFCBD5E1),
+                      width: 1.2,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.event_repeat_rounded,
+                        size: 14,
+                        color: isDueToday
+                            ? const Color(0xFFB45309)
+                            : const Color(0xFF475569),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        isDueToday
+                            ? 'Follow-Up: Today (${_formatDate(followUpDate)})'
+                            : 'Follow-Up Date: ${_formatDate(followUpDate)}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: isDueToday
+                              ? const Color(0xFF92400E)
+                              : const Color(0xFF334155),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Icon(
+                        Icons.edit_calendar_rounded,
+                        size: 13,
+                        color: isDueToday
+                            ? const Color(0xFFB45309)
+                            : const Color(0xFF64748B),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+
             const SizedBox(height: 8),
 
             // Compact Remarks TextField with inline Save button
@@ -216,14 +318,16 @@ class _InquiryCardState extends State<InquiryCard> {
                 labelText: 'Remarks',
                 labelStyle: const TextStyle(fontSize: 12),
                 hintText: 'Add follow-up notes...',
-                hintStyle: const TextStyle(fontSize: 12, color: Color(0xFF94A3B8)),
+                hintStyle:
+                    const TextStyle(fontSize: 12, color: Color(0xFF94A3B8)),
                 contentPadding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                 suffixIcon: _isRemarksDirty
                     ? IconButton(
                         iconSize: 18,
                         padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                        constraints:
+                            const BoxConstraints(minWidth: 32, minHeight: 32),
                         tooltip: 'Save Remarks',
                         onPressed: () {
                           widget.onRemarksSaved(_remarksController.text.trim());
@@ -243,7 +347,7 @@ class _InquiryCardState extends State<InquiryCard> {
             const Divider(height: 1, color: Color(0xFFF1F5F9)),
             const SizedBox(height: 6),
 
-            // Row of 4 1-Click Action Icon Buttons (all within Expanded so they fit on ANY device)
+            // Row of 4 1-Click Action Icon Buttons
             Row(
               children: [
                 Expanded(
