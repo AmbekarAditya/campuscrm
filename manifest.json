@@ -1,0 +1,11 @@
+{
+    "name": "campusCRM",
+    "short_name": "campusCRM",
+    "start_url": ".",
+    "display": "standalone",
+    "background_color": "#F8FAFC",
+    "theme_color": "#1E40AF",
+    "description": "Cross-platform management system for small teaching institutes.",
+    "orientation": "portrait-primary",
+    "prefer_related_applications": false
+}
