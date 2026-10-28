@@ -38,6 +38,10 @@ class LocalBatchesNotifier extends StateNotifier<List<Batch>> {
         if (b.id == batchId) b.copyWith(studentIds: studentIds) else b,
     ];
   }
+
+  void removeBatch(String batchId) {
+    state = state.where((b) => b.id != batchId).toList();
+  }
 }
 
 final localBatchesProvider =
@@ -89,6 +93,18 @@ class BatchRepository {
     );
     if (_collection != null) {
       await _collection!.doc(batchId).update({'studentIds': studentIds});
+    }
+  }
+
+  Future<void> deleteBatch(String batchId, String batchName) async {
+    _localNotifier.removeBatch(batchId);
+    await _logger.log(
+      actorName: 'Owner',
+      action: 'Deleted batch "$batchName"',
+      category: 'Batches',
+    );
+    if (_collection != null) {
+      await _collection!.doc(batchId).delete();
     }
   }
 }

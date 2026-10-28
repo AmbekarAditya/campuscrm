@@ -85,6 +85,19 @@ class BatchListView extends ConsumerWidget {
           ),
           const SizedBox(height: 16),
 
+          if (batches.isEmpty)
+            const Card(
+              child: Padding(
+                padding: EdgeInsets.all(32),
+                child: Center(
+                  child: Text(
+                    'No active batches found. Click "Create Batch" to start a new cohort.',
+                    style: TextStyle(fontSize: 16, color: Color(0xFF64748B)),
+                  ),
+                ),
+              ),
+            ),
+
           // Batches List
           ...batches.map((batch) {
             final enrolledStudents = allInquiries
@@ -140,15 +153,34 @@ class BatchListView extends ConsumerWidget {
                             ),
                           ],
                         ),
-                        OutlinedButton.icon(
-                          onPressed: () => _showManageStudentsDialog(
-                            context,
-                            ref,
-                            batch,
-                            joinedStudents,
-                          ),
-                          icon: const Icon(Icons.person_add_alt_1_outlined),
-                          label: const Text('Select Joined Students'),
+                        Wrap(
+                          spacing: 10,
+                          runSpacing: 8,
+                          children: [
+                            OutlinedButton.icon(
+                              onPressed: () => _showManageStudentsDialog(
+                                context,
+                                ref,
+                                batch,
+                                joinedStudents,
+                              ),
+                              icon: const Icon(Icons.person_add_alt_1_outlined),
+                              label: const Text('Select Joined Students'),
+                            ),
+                            OutlinedButton.icon(
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: const Color(0xFFDC2626),
+                                side: const BorderSide(color: Color(0xFFFCA5A5)),
+                              ),
+                              onPressed: () => _confirmDeleteBatchDialog(
+                                context,
+                                ref,
+                                batch,
+                              ),
+                              icon: const Icon(Icons.delete_outline_rounded),
+                              label: const Text('Delete Batch'),
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -619,6 +651,53 @@ class BatchListView extends ConsumerWidget {
               ],
             );
           },
+        );
+      },
+    );
+  }
+
+  Future<void> _confirmDeleteBatchDialog(
+    BuildContext context,
+    WidgetRef ref,
+    Batch batch,
+  ) async {
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Delete Batch?'),
+          content: Text(
+            'Are you sure you want to delete "${batch.name}"? Enrolled students will remain in your Joined Inquiries list.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFDC2626),
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () async {
+                await ref
+                    .read(batchRepositoryProvider)
+                    .deleteBatch(batch.id, batch.name);
+                if (dialogContext.mounted) {
+                  Navigator.of(dialogContext).pop();
+                }
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Deleted batch "${batch.name}".'),
+                    ),
+                  );
+                }
+              },
+              icon: const Icon(Icons.delete_forever_rounded),
+              label: const Text('Delete Batch'),
+            ),
+          ],
         );
       },
     );
