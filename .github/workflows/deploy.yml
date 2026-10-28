@@ -24,7 +24,11 @@ jobs:
         run: flutter pub get
 
       - name: Build Web
-        run: flutter build web --release --base-href "/campuscrm/"
+        run: |
+          flutter build web --release --base-href "/campuscrm/"
+          cp build/web/index.html build/web/404.html
+          ln -sfn . build/web/academycrm
+          ln -sfn . build/web/campuscrm
 
       - name: Deploy to gh-pages branch
         uses: peaceiris/actions-gh-pages@v4

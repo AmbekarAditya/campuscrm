@@ -1,11 +1,11 @@
 {
-    "name": "campusCRM",
-    "short_name": "campusCRM",
+    "name": "academyCRM",
+    "short_name": "academyCRM",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#F8FAFC",
-    "theme_color": "#1E40AF",
-    "description": "Cross-platform management system for small teaching institutes.",
+    "theme_color": "#4F46E5",
+    "description": "Cross-platform management system for teaching academies and coaching institutes.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false
 }

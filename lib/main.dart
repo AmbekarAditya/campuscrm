@@ -22,18 +22,18 @@ Future<void> main() async {
       overrides: [
         isFirebaseInitializedProvider.overrideWith((ref) => firebaseReady),
       ],
-      child: const CampusCrmApp(),
+      child: const AcademyCrmApp(),
     ),
   );
 }
 
-class CampusCrmApp extends StatelessWidget {
-  const CampusCrmApp({super.key});
+class AcademyCrmApp extends StatelessWidget {
+  const AcademyCrmApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'campusCRM',
+      title: 'academyCRM',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       home: const MainNavigationShell(),
@@ -204,27 +204,27 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
       return Padding(
         padding: const EdgeInsets.only(top: 18, bottom: 16),
         child: Tooltip(
-          message: 'campusCRM',
+          message: 'academyCRM',
           child: Container(
             width: 44,
             height: 44,
             decoration: BoxDecoration(
               gradient: const LinearGradient(
-                colors: [Color(0xFF4F46E5), Color(0xFF6366F1)],
+                colors: [Color(0xFF4338CA), Color(0xFF6366F1)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF4F46E5).withValues(alpha: 0.3),
+                  color: const Color(0xFF4F46E5).withValues(alpha: 0.35),
                   blurRadius: 8,
                   offset: const Offset(0, 3),
                 ),
               ],
             ),
             child: const Icon(
-              Icons.school_rounded,
+              Icons.auto_stories_rounded,
               color: Colors.white,
               size: 24,
             ),
@@ -247,21 +247,21 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
                 height: 44,
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
-                    colors: [Color(0xFF4F46E5), Color(0xFF6366F1)],
+                    colors: [Color(0xFF4338CA), Color(0xFF6366F1)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF4F46E5).withValues(alpha: 0.3),
+                      color: const Color(0xFF4F46E5).withValues(alpha: 0.35),
                       blurRadius: 8,
                       offset: const Offset(0, 3),
                     ),
                   ],
                 ),
                 child: const Icon(
-                  Icons.school_rounded,
+                  Icons.auto_stories_rounded,
                   color: Colors.white,
                   size: 25,
                 ),
@@ -280,7 +280,7 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
                         letterSpacing: -0.5,
                       ),
                       children: [
-                        TextSpan(text: 'campus'),
+                        TextSpan(text: 'academy'),
                         TextSpan(
                           text: 'CRM',
                           style: TextStyle(
@@ -293,7 +293,7 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
                   ),
                   SizedBox(height: 2),
                   Text(
-                    'Campus Management',
+                    'Academy Management Platform',
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,

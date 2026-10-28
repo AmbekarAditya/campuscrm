@@ -184,7 +184,7 @@ class _AddStaffFormState extends ConsumerState<AddStaffForm> {
                     autocorrect: false,
                     decoration: const InputDecoration(
                       labelText: 'Login ID / Username *',
-                      hintText: 'E.g. neha.desk or staff@campuscrm.com',
+                      hintText: 'E.g. neha.desk or staff@academycrm.com',
                       prefixIcon: Icon(Icons.alternate_email_rounded),
                       helperText: 'Unique identifier for staff login',
                     ),
