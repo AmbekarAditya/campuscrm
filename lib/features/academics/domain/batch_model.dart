@@ -17,6 +17,14 @@ class Batch {
     required this.studentIds,
   });
 
+  /// Returns true if [date] (ignoring time of day) falls between [startDate] and [endDate] inclusive.
+  bool isActiveOn(DateTime date) {
+    final target = DateTime(date.year, date.month, date.day);
+    final start = DateTime(startDate.year, startDate.month, startDate.day);
+    final end = DateTime(endDate.year, endDate.month, endDate.day);
+    return !target.isBefore(start) && !target.isAfter(end);
+  }
+
   Batch copyWith({
     String? id,
     String? name,

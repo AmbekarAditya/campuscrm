@@ -1,30 +1,183 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/services/activity_logger.dart';
+import 'package:intl/intl.dart';
 
-class DashboardScreen extends ConsumerWidget {
+import '../../academics/data/batch_repository.dart';
+import '../../academics/domain/batch_model.dart';
+import '../../inquiries/data/inquiry_repository.dart';
+import '../../inquiries/domain/inquiry_model.dart';
+
+class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends ConsumerState<DashboardScreen> {
+  DateTime _selectedDate = DateTime.now();
+
+  String _formatFullDate(DateTime date) {
+    return DateFormat('EEEE, dd MMM yyyy').format(date);
+  }
+
+  String _formatShortDate(DateTime date) {
+    return DateFormat('dd MMM yyyy').format(date);
+  }
+
+  bool _isSameDay(DateTime a, DateTime b) {
+    return a.year == b.year && a.month == b.month && a.day == b.day;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final allBatches = ref.watch(localBatchesProvider);
+    final attendanceMap = ref.watch(batchAttendanceProvider);
+    final List<Inquiry> allInquiries =
+        ref.watch(inquiriesStreamProvider).asData?.value ??
+        ref.watch(localInquiriesProvider);
+
+    final newLeadsCount = allInquiries
+        .where((inq) => inq.status == InquiryStatus.newLead)
+        .length;
+
+    // Batches whose Date From - Date To includes the selected dashboard date
+    final todaysBatches = allBatches
+        .where((batch) => batch.isActiveOn(_selectedDate))
+        .toList();
+
+    // Any batches outside the selected date (e.g., future or past batches)
+    final otherBatches = allBatches
+        .where((batch) => !batch.isActiveOn(_selectedDate))
+        .toList();
+
+    final isToday = _isSameDay(_selectedDate, DateTime.now());
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Institute Overview'),
         centerTitle: false,
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: OutlinedButton.icon(
+              onPressed: () async {
+                final picked = await showDatePicker(
+                  context: context,
+                  initialDate: _selectedDate,
+                  firstDate: DateTime(2020),
+                  lastDate: DateTime(2032),
+                );
+                if (picked != null) {
+                  setState(() => _selectedDate = picked);
+                }
+              },
+              icon: const Icon(Icons.calendar_month_rounded),
+              label: Text(
+                isToday
+                    ? 'Today: ${_formatShortDate(_selectedDate)}'
+                    : _formatShortDate(_selectedDate),
+              ),
+            ),
+          ),
+        ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showMarkAttendanceDialog(context, ref),
-        icon: const Icon(Icons.fact_check_rounded, size: 26),
-        label: const Text(
-          'Mark Daily Attendance',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-        ),
-        backgroundColor: const Color(0xFF1E40AF),
-        foregroundColor: Colors.white,
-      ),
+      floatingActionButton: todaysBatches.isEmpty
+          ? null
+          : FloatingActionButton.extended(
+              onPressed: () => _handleFloatingAttendanceButton(
+                context,
+                todaysBatches,
+                allInquiries,
+                attendanceMap,
+              ),
+              icon: const Icon(Icons.fact_check_rounded, size: 26),
+              label: const Text(
+                'Mark Daily Attendance',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+              ),
+              backgroundColor: const Color(0xFF1E40AF),
+              foregroundColor: Colors.white,
+            ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 20, 20, 96),
         children: [
+          // Prominent Dashboard Date Bar
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            decoration: BoxDecoration(
+              color: const Color(0xFFEFF6FF),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFFBFDBFE), width: 1.5),
+            ),
+            child: Wrap(
+              spacing: 12,
+              runSpacing: 8,
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.today_rounded,
+                      color: Color(0xFF1E40AF),
+                      size: 28,
+                    ),
+                    const SizedBox(width: 12),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          isToday ? "Today's Date" : 'Selected Schedule Date',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF1D4ED8),
+                          ),
+                        ),
+                        Text(
+                          _formatFullDate(_selectedDate),
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleLarge
+                              ?.copyWith(color: const Color(0xFF1E3A8A)),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (!isToday)
+                      TextButton(
+                        onPressed: () =>
+                            setState(() => _selectedDate = DateTime.now()),
+                        child: const Text('Reset to Today'),
+                      ),
+                    TextButton.icon(
+                      onPressed: () async {
+                        final picked = await showDatePicker(
+                          context: context,
+                          initialDate: _selectedDate,
+                          firstDate: DateTime(2020),
+                          lastDate: DateTime(2032),
+                        );
+                        if (picked != null) {
+                          setState(() => _selectedDate = picked);
+                        }
+                      },
+                      icon: const Icon(Icons.edit_calendar_rounded),
+                      label: const Text('Change Date'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+
           // Action Items Alert Widget
           Container(
             padding: const EdgeInsets.all(20),
@@ -58,119 +211,367 @@ class DashboardScreen extends ConsumerWidget {
                   description: 'Fee installments due this week need follow-up.',
                 ),
                 const SizedBox(height: 8),
-                const _ActionAlertRow(
-                  badgeText: '5 New Leads',
-                  badgeColor: Color(0xFF2563EB),
-                  description: 'Uncontacted inquiries from the last 24 hours.',
+                _ActionAlertRow(
+                  badgeText: '$newLeadsCount New Leads',
+                  badgeColor: const Color(0xFF2563EB),
+                  description: 'Uncontacted inquiries awaiting follow-up.',
                 ),
               ],
             ),
           ),
           const SizedBox(height: 24),
 
-          // Today's Classes List View
-          Text(
-            "Today's Classes",
-            style: Theme.of(context).textTheme.headlineMedium,
+          // Today's Classes Header
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      isToday
+                          ? "Today's Classes (${_formatShortDate(_selectedDate)})"
+                          : 'Classes on ${_formatShortDate(_selectedDate)}',
+                      style: Theme.of(context).textTheme.headlineMedium,
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Click any class below to mark attendance for its enrolled students.',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Color(0xFF475569),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 12),
-          const _TodayClassTile(
-            timeSlot: '09:30 AM - 11:00 AM',
-            batchName: 'Morning Foundation Batch A',
-            room: 'Room 101',
-            studentCount: 18,
-            statusLabel: 'In Progress',
-            statusColor: Color(0xFF15803D),
-          ),
-          const _TodayClassTile(
-            timeSlot: '11:30 AM - 01:00 PM',
-            batchName: 'Advanced Practical Batch B',
-            room: 'Lab 2',
-            studentCount: 12,
-            statusLabel: 'Upcoming',
-            statusColor: Color(0xFF1D4ED8),
-          ),
-          const _TodayClassTile(
-            timeSlot: '04:00 PM - 05:30 PM',
-            batchName: 'Evening Fast-Track Cohort',
-            room: 'Room 102',
-            studentCount: 15,
-            statusLabel: 'Upcoming',
-            statusColor: Color(0xFF1D4ED8),
-          ),
+
+          if (todaysBatches.isEmpty)
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Text(
+                  'No batches scheduled for ${_formatShortDate(_selectedDate)}. Create a batch in the "Batches" tab with dates covering this day.',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    color: Color(0xFF64748B),
+                  ),
+                ),
+              ),
+            )
+          else
+            ...todaysBatches.map((batch) {
+              final enrolledStudents = allInquiries
+                  .where((inq) => batch.studentIds.contains(inq.id))
+                  .toList();
+              final attendanceKey =
+                  BatchAttendanceNotifier.keyFor(batch.id, _selectedDate);
+              final markedPresentIds = attendanceMap[attendanceKey];
+
+              return _TodayClassTile(
+                batchName: batch.name,
+                timeSlot: batch.timings,
+                dateRange:
+                    '${_formatShortDate(batch.startDate)} – ${_formatShortDate(batch.endDate)}',
+                scheduleDateLabel: _formatShortDate(_selectedDate),
+                studentCount: enrolledStudents.length,
+                studentNames: enrolledStudents.map((s) => s.name).join(', '),
+                isAttendanceMarked: markedPresentIds != null,
+                presentCount: markedPresentIds?.length ?? 0,
+                onTap: () => _showBatchAttendanceDialog(
+                  context: context,
+                  batch: batch,
+                  enrolledStudents: enrolledStudents,
+                  existingPresentIds: markedPresentIds,
+                ),
+              );
+            }),
+
+          // Other / Upcoming Batches (outside selected date)
+          if (otherBatches.isNotEmpty) ...[
+            const SizedBox(height: 24),
+            Text(
+              'Other Scheduled Batches',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 10),
+            ...otherBatches.map((batch) {
+              final enrolledStudents = allInquiries
+                  .where((inq) => batch.studentIds.contains(inq.id))
+                  .toList();
+              return Card(
+                child: ListTile(
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  title: Text(
+                    batch.name,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  subtitle: Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: Text(
+                      '${_formatShortDate(batch.startDate)} – ${_formatShortDate(batch.endDate)}  •  ${batch.timings}  •  ${enrolledStudents.length} Student(s)',
+                    ),
+                  ),
+                  trailing: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Text(
+                      'Not Active Today',
+                      style: TextStyle(
+                        color: Color(0xFF475569),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }),
+          ],
         ],
       ),
     );
   }
 
-  Future<void> _showMarkAttendanceDialog(
+  Future<void> _handleFloatingAttendanceButton(
     BuildContext context,
-    WidgetRef ref,
+    List<Batch> todaysBatches,
+    List<Inquiry> allInquiries,
+    Map<String, Set<String>> attendanceMap,
   ) async {
-    final attendance = <String, bool>{
-      'Aarav Sharma': true,
-      'Priya Nair': true,
-      'Rohan Mehta': true,
-      'Sneha Kulkarni': false,
-      'Kabir Malhotra': true,
-    };
+    if (todaysBatches.length == 1) {
+      final batch = todaysBatches.first;
+      final enrolled = allInquiries
+          .where((inq) => batch.studentIds.contains(inq.id))
+          .toList();
+      final key = BatchAttendanceNotifier.keyFor(batch.id, _selectedDate);
+      await _showBatchAttendanceDialog(
+        context: context,
+        batch: batch,
+        enrolledStudents: enrolled,
+        existingPresentIds: attendanceMap[key],
+      );
+      return;
+    }
+
+    // Multiple classes today: let the owner pick which class to mark
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: Text(
+            'Select Class • ${_formatShortDate(_selectedDate)}',
+          ),
+          content: SizedBox(
+            width: 440,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: todaysBatches.map((batch) {
+                final enrolled = allInquiries
+                    .where((inq) => batch.studentIds.contains(inq.id))
+                    .toList();
+                final key =
+                    BatchAttendanceNotifier.keyFor(batch.id, _selectedDate);
+                final marked = attendanceMap[key];
+                return ListTile(
+                  leading: const Icon(
+                    Icons.fact_check_outlined,
+                    color: Color(0xFF1E40AF),
+                  ),
+                  title: Text(
+                    batch.name,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: Text(
+                    '${batch.timings} • ${enrolled.length} Student(s)',
+                  ),
+                  trailing: Text(
+                    marked != null
+                        ? '${marked.length}/${enrolled.length} Present'
+                        : 'Mark Now',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: marked != null
+                          ? const Color(0xFF15803D)
+                          : const Color(0xFF1E40AF),
+                    ),
+                  ),
+                  onTap: () {
+                    Navigator.of(dialogContext).pop();
+                    _showBatchAttendanceDialog(
+                      context: context,
+                      batch: batch,
+                      enrolledStudents: enrolled,
+                      existingPresentIds: marked,
+                    );
+                  },
+                );
+              }).toList(),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Close'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _showBatchAttendanceDialog({
+    required BuildContext context,
+    required Batch batch,
+    required List<Inquiry> enrolledStudents,
+    required Set<String>? existingPresentIds,
+  }) async {
+    // Default all enrolled students to Present if attendance hasn't been marked yet today
+    final presentIds = existingPresentIds != null
+        ? Set<String>.from(existingPresentIds)
+        : enrolledStudents.map((s) => s.id).toSet();
 
     await showDialog<void>(
       context: context,
       builder: (dialogContext) {
         return StatefulBuilder(
-          builder: (context, setModalState) {
+          builder: (ctx, setModalState) {
             return AlertDialog(
-              title: const Text('Mark Daily Attendance • Morning Batch A'),
+              title: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Mark Attendance • ${batch.name}'),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Date: ${_formatFullDate(_selectedDate)}  |  ${batch.timings}',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF475569),
+                    ),
+                  ),
+                ],
+              ),
               content: SizedBox(
-                width: 420,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: attendance.entries.map((entry) {
-                    return CheckboxListTile(
-                      title: Text(entry.key),
-                      subtitle: Text(entry.value ? 'Present' : 'Absent'),
-                      value: entry.value,
-                      onChanged: (checked) {
-                        if (checked != null) {
-                          setModalState(() => attendance[entry.key] = checked);
-                        }
-                      },
-                    );
-                  }).toList(),
-                ),
+                width: 460,
+                child: enrolledStudents.isEmpty
+                    ? const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 16),
+                        child: Text(
+                          'No Joined students are assigned to this batch yet. Go to the "Batches" tab and click "Select Joined Students" to assign students.',
+                        ),
+                      )
+                    : SingleChildScrollView(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Present: ${presentIds.length} / ${enrolledStudents.length}',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xFF15803D),
+                                  ),
+                                ),
+                                TextButton(
+                                  onPressed: () {
+                                    setModalState(() {
+                                      if (presentIds.length ==
+                                          enrolledStudents.length) {
+                                        presentIds.clear();
+                                      } else {
+                                        presentIds.addAll(
+                                          enrolledStudents.map((s) => s.id),
+                                        );
+                                      }
+                                    });
+                                  },
+                                  child: Text(
+                                    presentIds.length == enrolledStudents.length
+                                        ? 'Mark All Absent'
+                                        : 'Mark All Present',
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const Divider(height: 12),
+                            ...enrolledStudents.map((student) {
+                              final isPresent = presentIds.contains(student.id);
+                              return CheckboxListTile(
+                                title: Text(
+                                  student.name,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                subtitle: Text(
+                                  '${student.areaCity} • ${isPresent ? "Present" : "Absent"}',
+                                  style: TextStyle(
+                                    color: isPresent
+                                        ? const Color(0xFF15803D)
+                                        : const Color(0xFFDC2626),
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                value: isPresent,
+                                onChanged: (checked) {
+                                  setModalState(() {
+                                    if (checked == true) {
+                                      presentIds.add(student.id);
+                                    } else {
+                                      presentIds.remove(student.id);
+                                    }
+                                  });
+                                },
+                              );
+                            }),
+                          ],
+                        ),
+                      ),
               ),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(dialogContext).pop(),
                   child: const Text('Cancel'),
                 ),
-                ElevatedButton.icon(
-                  onPressed: () async {
-                    final presentCount =
-                        attendance.values.where((v) => v).length;
-                    await ref.read(activityLoggerProvider).log(
-                          actorName: 'Owner',
-                          action:
-                              'Marked daily attendance ($presentCount/${attendance.length} present)',
-                          category: 'Attendance',
-                        );
-                    if (dialogContext.mounted) {
-                      Navigator.of(dialogContext).pop();
-                    }
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            'Attendance saved: $presentCount/${attendance.length} students present.',
+                if (enrolledStudents.isNotEmpty)
+                  ElevatedButton.icon(
+                    onPressed: () async {
+                      await ref
+                          .read(batchRepositoryProvider)
+                          .markBatchAttendance(
+                            batch: batch,
+                            date: _selectedDate,
+                            presentStudentIds: presentIds,
+                            totalStudents: enrolledStudents.length,
+                          );
+                      if (dialogContext.mounted) {
+                        Navigator.of(dialogContext).pop();
+                      }
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              'Attendance saved for "${batch.name}" (${presentIds.length}/${enrolledStudents.length} present on ${_formatShortDate(_selectedDate)}).',
+                            ),
                           ),
-                        ),
-                      );
-                    }
-                  },
-                  icon: const Icon(Icons.check_circle_outline),
-                  label: const Text('Save Attendance'),
-                ),
+                        );
+                      }
+                    },
+                    icon: const Icon(Icons.check_circle_outline),
+                    label: const Text('Save Attendance'),
+                  ),
               ],
             );
           },
@@ -227,47 +628,159 @@ class _ActionAlertRow extends StatelessWidget {
 }
 
 class _TodayClassTile extends StatelessWidget {
-  final String timeSlot;
   final String batchName;
-  final String room;
+  final String timeSlot;
+  final String dateRange;
+  final String scheduleDateLabel;
   final int studentCount;
-  final String statusLabel;
-  final Color statusColor;
+  final String studentNames;
+  final bool isAttendanceMarked;
+  final int presentCount;
+  final VoidCallback onTap;
 
   const _TodayClassTile({
-    required this.timeSlot,
     required this.batchName,
-    required this.room,
+    required this.timeSlot,
+    required this.dateRange,
+    required this.scheduleDateLabel,
     required this.studentCount,
-    required this.statusLabel,
-    required this.statusColor,
+    required this.studentNames,
+    required this.isAttendanceMarked,
+    required this.presentCount,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
+    final badgeColor = isAttendanceMarked
+        ? const Color(0xFF15803D)
+        : const Color(0xFF1E40AF);
+
     return Card(
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        title: Text(
-          batchName,
-          style: Theme.of(context).textTheme.titleMedium,
-        ),
-        subtitle: Padding(
-          padding: const EdgeInsets.only(top: 6),
-          child: Text('$timeSlot  •  $room  •  $studentCount Students'),
-        ),
-        trailing: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: statusColor.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Text(
-            statusLabel,
-            style: TextStyle(
-              color: statusColor,
-              fontWeight: FontWeight.w700,
-            ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Wrap(
+            spacing: 16,
+            runSpacing: 12,
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    batchName,
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 6,
+                    children: [
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.access_time_filled_rounded,
+                            size: 17,
+                            color: Color(0xFF7E22CE),
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            timeSlot,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF7E22CE),
+                            ),
+                          ),
+                        ],
+                      ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.date_range_rounded,
+                            size: 17,
+                            color: Color(0xFF1D4ED8),
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            'Batch Dates: $dateRange',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF1D4ED8),
+                            ),
+                          ),
+                        ],
+                      ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.people_alt_rounded,
+                            size: 17,
+                            color: Color(0xFF15803D),
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            '$studentCount Joined Student(s)',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF15803D),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  if (studentNames.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      'Students: $studentNames',
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                  ],
+                ],
+              ),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  color: badgeColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: badgeColor.withValues(alpha: 0.35),
+                    width: 1.5,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      isAttendanceMarked
+                          ? Icons.check_circle_rounded
+                          : Icons.fact_check_outlined,
+                      color: badgeColor,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      isAttendanceMarked
+                          ? 'Present: $presentCount/$studentCount ($scheduleDateLabel)'
+                          : 'Click to Mark Attendance',
+                      style: TextStyle(
+                        color: badgeColor,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
       ),
