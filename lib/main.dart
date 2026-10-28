@@ -57,7 +57,9 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
 
   @override
   Widget build(BuildContext context) {
-    final isWideScreen = MediaQuery.sizeOf(context).width >= 800;
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final isWideScreen = screenWidth >= 800;
+    final isExtended = screenWidth >= 960;
 
     final screens = [
       const DashboardScreen(),
@@ -89,47 +91,66 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
       body: Row(
         children: [
           if (isWideScreen)
-            NavigationRail(
-              extended: MediaQuery.sizeOf(context).width >= 1100,
-              selectedIndex: _selectedIndex.clamp(0, 6),
-              onDestinationSelected: _selectScreen,
-              destinations: const [
-                NavigationRailDestination(
-                  icon: Icon(Icons.dashboard_outlined),
-                  selectedIcon: Icon(Icons.dashboard_rounded),
-                  label: Text('Dashboard'),
+            Container(
+              decoration: const BoxDecoration(
+                border: Border(
+                  right: BorderSide(color: Color(0xFFE2E8F0), width: 1.2),
                 ),
-                NavigationRailDestination(
-                  icon: Icon(Icons.contact_phone_outlined),
-                  selectedIcon: Icon(Icons.contact_phone_rounded),
-                  label: Text('Inquiries'),
-                ),
-                NavigationRailDestination(
-                  icon: Icon(Icons.school_outlined),
-                  selectedIcon: Icon(Icons.school_rounded),
-                  label: Text('Batches'),
-                ),
-                NavigationRailDestination(
-                  icon: Icon(Icons.account_balance_wallet_outlined),
-                  selectedIcon: Icon(Icons.account_balance_wallet_rounded),
-                  label: Text('Payments'),
-                ),
-                NavigationRailDestination(
-                  icon: Icon(Icons.calendar_month_outlined),
-                  selectedIcon: Icon(Icons.calendar_month_rounded),
-                  label: Text('Bookings'),
-                ),
-                NavigationRailDestination(
-                  icon: Icon(Icons.inventory_2_outlined),
-                  selectedIcon: Icon(Icons.inventory_2_rounded),
-                  label: Text('Inventory'),
-                ),
-                NavigationRailDestination(
-                  icon: Icon(Icons.admin_panel_settings_outlined),
-                  selectedIcon: Icon(Icons.admin_panel_settings_rounded),
-                  label: Text('Admin'),
-                ),
-              ],
+              ),
+              child: NavigationRail(
+                minExtendedWidth: 260,
+                minWidth: 76,
+                extended: isExtended,
+                selectedIndex: _selectedIndex.clamp(0, 6),
+                onDestinationSelected: _selectScreen,
+                leading: _buildRailBranding(isExtended),
+                destinations: const [
+                  NavigationRailDestination(
+                    icon: Icon(Icons.dashboard_outlined, size: 24),
+                    selectedIcon: Icon(Icons.dashboard_rounded, size: 24),
+                    label: Text('Dashboard'),
+                    padding: EdgeInsets.symmetric(vertical: 4),
+                  ),
+                  NavigationRailDestination(
+                    icon: Icon(Icons.contact_phone_outlined, size: 24),
+                    selectedIcon: Icon(Icons.contact_phone_rounded, size: 24),
+                    label: Text('Inquiries'),
+                    padding: EdgeInsets.symmetric(vertical: 4),
+                  ),
+                  NavigationRailDestination(
+                    icon: Icon(Icons.school_outlined, size: 24),
+                    selectedIcon: Icon(Icons.school_rounded, size: 24),
+                    label: Text('Batches'),
+                    padding: EdgeInsets.symmetric(vertical: 4),
+                  ),
+                  NavigationRailDestination(
+                    icon: Icon(Icons.account_balance_wallet_outlined, size: 24),
+                    selectedIcon:
+                        Icon(Icons.account_balance_wallet_rounded, size: 24),
+                    label: Text('Payments'),
+                    padding: EdgeInsets.symmetric(vertical: 4),
+                  ),
+                  NavigationRailDestination(
+                    icon: Icon(Icons.calendar_month_outlined, size: 24),
+                    selectedIcon: Icon(Icons.calendar_month_rounded, size: 24),
+                    label: Text('Bookings'),
+                    padding: EdgeInsets.symmetric(vertical: 4),
+                  ),
+                  NavigationRailDestination(
+                    icon: Icon(Icons.inventory_2_outlined, size: 24),
+                    selectedIcon: Icon(Icons.inventory_2_rounded, size: 24),
+                    label: Text('Inventory'),
+                    padding: EdgeInsets.symmetric(vertical: 4),
+                  ),
+                  NavigationRailDestination(
+                    icon: Icon(Icons.admin_panel_settings_outlined, size: 24),
+                    selectedIcon:
+                        Icon(Icons.admin_panel_settings_rounded, size: 24),
+                    label: Text('Admin'),
+                    padding: EdgeInsets.symmetric(vertical: 4),
+                  ),
+                ],
+              ),
             ),
           Expanded(child: currentBody),
         ],
@@ -175,6 +196,118 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
                 ),
               ],
             ),
+    );
+  }
+
+  Widget _buildRailBranding(bool isExtended) {
+    if (!isExtended) {
+      return Padding(
+        padding: const EdgeInsets.only(top: 18, bottom: 16),
+        child: Tooltip(
+          message: 'campusCRM',
+          child: Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF4F46E5), Color(0xFF6366F1)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF4F46E5).withValues(alpha: 0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: const Icon(
+              Icons.school_rounded,
+              color: Colors.white,
+              size: 24,
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 18, 16, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF4F46E5), Color(0xFF6366F1)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF4F46E5).withValues(alpha: 0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.school_rounded,
+                  color: Colors.white,
+                  size: 25,
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text.rich(
+                    TextSpan(
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF0F172A),
+                        letterSpacing: -0.5,
+                      ),
+                      children: [
+                        TextSpan(text: 'campus'),
+                        TextSpan(
+                          text: 'CRM',
+                          style: TextStyle(
+                            color: Color(0xFF4F46E5),
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(height: 2),
+                  Text(
+                    'Campus Management',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF64748B),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          const Divider(height: 1, color: Color(0xFFE2E8F0)),
+        ],
+      ),
     );
   }
 }

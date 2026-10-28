@@ -75,18 +75,23 @@ class AppTheme {
         backgroundColor: Colors.white,
         elevation: 0,
         indicatorColor: primaryContainer,
-        selectedIconTheme: const IconThemeData(size: 24, color: primaryColor),
+        indicatorShape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        selectedIconTheme: const IconThemeData(size: 25, color: primaryColor),
         unselectedIconTheme:
-            const IconThemeData(size: 24, color: Color(0xFF64748B)),
+            const IconThemeData(size: 25, color: Color(0xFF64748B)),
         selectedLabelTextStyle: const TextStyle(
-          fontSize: 13,
+          fontSize: 15.5,
           fontWeight: FontWeight.w700,
           color: primaryColor,
+          letterSpacing: -0.2,
         ),
         unselectedLabelTextStyle: const TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.w500,
-          color: Color(0xFF64748B),
+          fontSize: 15,
+          fontWeight: FontWeight.w600,
+          color: Color(0xFF334155),
+          letterSpacing: -0.2,
         ),
       ),
       navigationBarTheme: NavigationBarThemeData(
