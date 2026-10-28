@@ -98,25 +98,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ),
         ],
       ),
-      floatingActionButton: todaysBatches.isEmpty
-          ? null
-          : FloatingActionButton.extended(
-              onPressed: () => _handleFloatingAttendanceButton(
-                context,
-                todaysBatches,
-                allInquiries,
-                attendanceMap,
-              ),
-              icon: const Icon(Icons.fact_check_rounded, size: 24),
-              label: const Text(
-                'Mark Daily Attendance',
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-              ),
-              backgroundColor: const Color(0xFF1E40AF),
-              foregroundColor: Colors.white,
-            ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 14, 16, 96),
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
         children: [
           // Prominent Dashboard Date Bar
           Container(
@@ -480,93 +463,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ],
         ],
       ),
-    );
-  }
-
-  Future<void> _handleFloatingAttendanceButton(
-    BuildContext context,
-    List<Batch> todaysBatches,
-    List<Inquiry> allInquiries,
-    Map<String, Set<String>> attendanceMap,
-  ) async {
-    if (todaysBatches.length == 1) {
-      final batch = todaysBatches.first;
-      final enrolled = allInquiries
-          .where((inq) => batch.studentIds.contains(inq.id))
-          .toList();
-      final key = BatchAttendanceNotifier.keyFor(batch.id, _selectedDate);
-      await _showBatchAttendanceDialog(
-        context: context,
-        batch: batch,
-        enrolledStudents: enrolled,
-        existingPresentIds: attendanceMap[key],
-      );
-      return;
-    }
-
-    // Multiple classes today: let the owner pick which class to mark
-    await showDialog<void>(
-      context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          title: Text(
-            'Select Class • ${_formatShortDate(_selectedDate)}',
-          ),
-          content: SizedBox(
-            width: 440,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: todaysBatches.map((batch) {
-                final enrolled = allInquiries
-                    .where((inq) => batch.studentIds.contains(inq.id))
-                    .toList();
-                final key =
-                    BatchAttendanceNotifier.keyFor(batch.id, _selectedDate);
-                final marked = attendanceMap[key];
-                return ListTile(
-                  leading: const Icon(
-                    Icons.fact_check_outlined,
-                    color: Color(0xFF1E40AF),
-                  ),
-                  title: Text(
-                    batch.name,
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                  subtitle: Text(
-                    '${batch.scheduleDescription} • ${batch.timings} • ${enrolled.length} Student(s)',
-                  ),
-                  trailing: Text(
-                    marked != null
-                        ? '${marked.length}/${enrolled.length} Present'
-                        : 'Mark Now',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                      color: marked != null
-                          ? const Color(0xFF15803D)
-                          : const Color(0xFF1E40AF),
-                    ),
-                  ),
-                  onTap: () {
-                    Navigator.of(dialogContext).pop();
-                    _showBatchAttendanceDialog(
-                      context: context,
-                      batch: batch,
-                      enrolledStudents: enrolled,
-                      existingPresentIds: marked,
-                    );
-                  },
-                );
-              }).toList(),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('Close'),
-            ),
-          ],
-        );
-      },
     );
   }
 
