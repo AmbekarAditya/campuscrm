@@ -139,6 +139,9 @@ final joinedStudentsProvider = Provider<List<Inquiry>>((ref) {
 /// Optional status filter selected on the Inquiries screen (`null` = show all).
 final inquiryStatusFilterProvider = StateProvider<InquiryStatus?>((ref) => null);
 
+/// Search query string for filtering inquiries by name, phone, or area.
+final inquirySearchQueryProvider = StateProvider<String>((ref) => '');
+
 class InquiryRepository {
   final FirebaseFirestore? _firestore;
   final LocalInquiriesNotifier _localNotifier;

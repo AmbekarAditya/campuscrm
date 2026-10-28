@@ -74,66 +74,84 @@ class _InquiryCardState extends State<InquiryCard> {
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Top Row: Lead Name, Area/City, and Color-Coded Status Dropdown
-            Wrap(
-              spacing: 16,
-              runSpacing: 12,
-              alignment: WrapAlignment.spaceBetween,
-              crossAxisAlignment: WrapCrossAlignment.center,
+            // Top Row: Lead Name & Location on left, Color-Coded Status Dropdown on right
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      inquiry.name,
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.location_on_outlined,
-                          size: 18,
-                          color: Color(0xFF64748B),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        inquiry.name,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF0F172A),
                         ),
-                        const SizedBox(width: 4),
-                        Text(
-                          inquiry.areaCity.isEmpty
-                              ? 'Location not specified'
-                              : inquiry.areaCity,
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                      ],
-                    ),
-                  ],
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.location_on_outlined,
+                            size: 14,
+                            color: Color(0xFF64748B),
+                          ),
+                          const SizedBox(width: 3),
+                          Flexible(
+                            child: Text(
+                              inquiry.areaCity.isEmpty
+                                  ? 'No location'
+                                  : inquiry.areaCity,
+                              style: const TextStyle(
+                                fontSize: 13,
+                                color: Color(0xFF64748B),
+                                fontWeight: FontWeight.w500,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
+                const SizedBox(width: 8),
 
-                // Color-Coded Status Dropdown
+                // Compact Color-Coded Status Dropdown
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
                     color: status.backgroundColor,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(10),
                     border: Border.all(
                       color: status.foregroundColor.withValues(alpha: 0.35),
-                      width: 1.5,
+                      width: 1.2,
                     ),
                   ),
                   child: DropdownButtonHideUnderline(
                     child: DropdownButton<InquiryStatus>(
                       value: status,
+                      isDense: true,
                       icon: Icon(
                         Icons.keyboard_arrow_down_rounded,
+                        size: 18,
                         color: status.foregroundColor,
                       ),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(10),
                       style: TextStyle(
-                        fontSize: 15,
+                        fontSize: 13,
                         fontWeight: FontWeight.w700,
                         color: status.foregroundColor,
                       ),
@@ -149,17 +167,18 @@ class _InquiryCardState extends State<InquiryCard> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Container(
-                                width: 10,
-                                height: 10,
+                                width: 8,
+                                height: 8,
                                 decoration: BoxDecoration(
                                   color: itemStatus.foregroundColor,
                                   shape: BoxShape.circle,
                                 ),
                               ),
-                              const SizedBox(width: 8),
+                              const SizedBox(width: 6),
                               Text(
                                 itemStatus.label,
                                 style: TextStyle(
+                                  fontSize: 13,
                                   color: itemStatus.foregroundColor,
                                   fontWeight: FontWeight.w700,
                                 ),
@@ -174,14 +193,15 @@ class _InquiryCardState extends State<InquiryCard> {
               ],
             ),
 
-            const SizedBox(height: 16),
+            const SizedBox(height: 8),
 
-            // Remarks TextField with quick-save action
+            // Compact Remarks TextField with inline Save button
             TextField(
               controller: _remarksController,
               maxLines: 2,
               minLines: 1,
               textInputAction: TextInputAction.done,
+              style: const TextStyle(fontSize: 13, color: Color(0xFF1E293B)),
               onChanged: (value) {
                 setState(() {
                   _isRemarksDirty = value != inquiry.remarks;
@@ -192,79 +212,97 @@ class _InquiryCardState extends State<InquiryCard> {
                 setState(() => _isRemarksDirty = false);
               },
               decoration: InputDecoration(
-                labelText: 'Remarks / Follow-up Notes',
-                hintText: 'E.g. Wants weekend batch, asked for demo class...',
+                isDense: true,
+                labelText: 'Remarks',
+                labelStyle: const TextStyle(fontSize: 12),
+                hintText: 'Add follow-up notes...',
+                hintStyle: const TextStyle(fontSize: 12, color: Color(0xFF94A3B8)),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                 suffixIcon: _isRemarksDirty
-                    ? Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: TextButton.icon(
-                          onPressed: () {
-                            widget.onRemarksSaved(_remarksController.text.trim());
-                            setState(() => _isRemarksDirty = false);
-                            FocusScope.of(context).unfocus();
-                          },
-                          icon: const Icon(Icons.check_circle_outline, size: 20),
-                          label: const Text('Save'),
+                    ? IconButton(
+                        iconSize: 18,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                        tooltip: 'Save Remarks',
+                        onPressed: () {
+                          widget.onRemarksSaved(_remarksController.text.trim());
+                          setState(() => _isRemarksDirty = false);
+                          FocusScope.of(context).unfocus();
+                        },
+                        icon: const Icon(
+                          Icons.check_circle_rounded,
+                          color: Color(0xFF16A34A),
                         ),
                       )
                     : null,
               ),
             ),
 
-            const SizedBox(height: 16),
-            const Divider(height: 1, color: Color(0xFFE2E8F0)),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
+            const Divider(height: 1, color: Color(0xFFF1F5F9)),
+            const SizedBox(height: 6),
 
-            // Row of 4 1-Click Action Icon Buttons (Call, WhatsApp, Email, Map Pin)
+            // Row of 4 1-Click Action Icon Buttons (all within Expanded so they fit on ANY device)
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _ActionIconButton(
-                  icon: Icons.phone_in_talk_rounded,
-                  label: 'Call',
-                  color: const Color(0xFF2563EB),
-                  backgroundColor: const Color(0xFFEFF6FF),
-                  onPressed: () => _launchActionUrl(
-                    context,
-                    Uri.parse('tel:${inquiry.phone}'),
+                Expanded(
+                  child: _ActionIconButton(
+                    icon: Icons.phone_in_talk_rounded,
+                    label: 'Call',
+                    color: const Color(0xFF2563EB),
+                    backgroundColor: const Color(0xFFEFF6FF),
+                    onPressed: () => _launchActionUrl(
+                      context,
+                      Uri.parse('tel:${inquiry.phone}'),
+                    ),
                   ),
                 ),
-                _ActionIconButton(
-                  icon: Icons.chat_bubble_rounded,
-                  label: 'WhatsApp',
-                  color: const Color(0xFF16A34A),
-                  backgroundColor: const Color(0xFFF0FDF4),
-                  onPressed: () {
-                    final cleanPhone = _sanitizeWhatsAppNumber(inquiry.phone);
-                    _launchActionUrl(
-                      context,
-                      Uri.parse('https://wa.me/$cleanPhone'),
-                    );
-                  },
-                ),
-                _ActionIconButton(
-                  icon: Icons.email_outlined,
-                  label: 'Email',
-                  color: const Color(0xFF9333EA),
-                  backgroundColor: const Color(0xFFFAF5FF),
-                  onPressed: () => _launchActionUrl(
-                    context,
-                    Uri.parse('mailto:${inquiry.email}'),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: _ActionIconButton(
+                    icon: Icons.chat_bubble_rounded,
+                    label: 'WhatsApp',
+                    color: const Color(0xFF16A34A),
+                    backgroundColor: const Color(0xFFF0FDF4),
+                    onPressed: () {
+                      final cleanPhone = _sanitizeWhatsAppNumber(inquiry.phone);
+                      _launchActionUrl(
+                        context,
+                        Uri.parse('https://wa.me/$cleanPhone'),
+                      );
+                    },
                   ),
                 ),
-                _ActionIconButton(
-                  icon: Icons.location_pin,
-                  label: 'Map',
-                  color: const Color(0xFFEA580C),
-                  backgroundColor: const Color(0xFFFFF7ED),
-                  onPressed: () {
-                    final encodedLocation =
-                        Uri.encodeComponent(inquiry.areaCity);
-                    _launchActionUrl(
+                const SizedBox(width: 6),
+                Expanded(
+                  child: _ActionIconButton(
+                    icon: Icons.email_outlined,
+                    label: 'Email',
+                    color: const Color(0xFF9333EA),
+                    backgroundColor: const Color(0xFFFAF5FF),
+                    onPressed: () => _launchActionUrl(
                       context,
-                      Uri.parse('https://maps.google.com/?q=$encodedLocation'),
-                    );
-                  },
+                      Uri.parse('mailto:${inquiry.email}'),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: _ActionIconButton(
+                    icon: Icons.location_pin,
+                    label: 'Map',
+                    color: const Color(0xFFEA580C),
+                    backgroundColor: const Color(0xFFFFF7ED),
+                    onPressed: () {
+                      final encodedLocation =
+                          Uri.encodeComponent(inquiry.areaCity);
+                      _launchActionUrl(
+                        context,
+                        Uri.parse('https://maps.google.com/?q=$encodedLocation'),
+                      );
+                    },
+                  ),
                 ),
               ],
             ),
@@ -294,30 +332,31 @@ class _ActionIconButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Tooltip(
       message: label,
-      child: InkWell(
-        onTap: onPressed,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          constraints: const BoxConstraints(minWidth: 76, minHeight: 54),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          decoration: BoxDecoration(
-            color: backgroundColor,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, color: color, size: 24),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: color,
+      child: Material(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(10),
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(10),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, color: color, size: 18),
+                const SizedBox(height: 2),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: color,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
