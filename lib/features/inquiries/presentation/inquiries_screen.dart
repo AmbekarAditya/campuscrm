@@ -198,6 +198,19 @@ class _InquiriesScreenState extends ConsumerState<InquiriesScreen> {
                                       inquiry.id, newDate),
                               onRemarksSaved: (remarks) =>
                                   repository.updateRemarks(inquiry.id, remarks),
+                              onDelete: () async {
+                                await repository.deleteInquiry(
+                                    inquiry.id, inquiry.name);
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                          'Inquiry "${inquiry.name}" deleted.'),
+                                      behavior: SnackBarBehavior.floating,
+                                    ),
+                                  );
+                                }
+                              },
                             );
                           },
                         );
@@ -219,6 +232,19 @@ class _InquiriesScreenState extends ConsumerState<InquiriesScreen> {
                                     inquiry.id, newDate),
                             onRemarksSaved: (remarks) =>
                                 repository.updateRemarks(inquiry.id, remarks),
+                            onDelete: () async {
+                              await repository.deleteInquiry(
+                                  inquiry.id, inquiry.name);
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                        'Inquiry "${inquiry.name}" deleted.'),
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
+                              }
+                            },
                           );
                         },
                       );

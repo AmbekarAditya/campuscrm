@@ -8,6 +8,7 @@ class InquiryCard extends StatefulWidget {
   final ValueChanged<InquiryStatus> onStatusChanged;
   final ValueChanged<String> onRemarksSaved;
   final ValueChanged<DateTime>? onFollowUpDateChanged;
+  final VoidCallback? onDelete;
 
   const InquiryCard({
     super.key,
@@ -15,6 +16,7 @@ class InquiryCard extends StatefulWidget {
     required this.onStatusChanged,
     required this.onRemarksSaved,
     this.onFollowUpDateChanged,
+    this.onDelete,
   });
 
   @override
@@ -116,6 +118,45 @@ class _InquiryCardState extends State<InquiryCard> {
   /// Strips spaces and special characters so `https://wa.me/<number>` works reliably.
   String _sanitizeWhatsAppNumber(String rawPhone) {
     return rawPhone.replaceAll(RegExp(r'[^0-9]'), '');
+  }
+
+  Future<void> _confirmDelete(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Color(0xFFDC2626), size: 28),
+            SizedBox(width: 8),
+            Text('Delete Inquiry?'),
+          ],
+        ),
+        content: Text(
+          'Are you sure you want to permanently delete the inquiry for "${widget.inquiry.name}" from the system?',
+          style: const TextStyle(fontSize: 14, color: Color(0xFF334155), height: 1.4),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogCtx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFDC2626),
+              foregroundColor: Colors.white,
+              elevation: 0,
+            ),
+            onPressed: () => Navigator.of(dialogCtx).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && widget.onDelete != null) {
+      widget.onDelete!();
+    }
   }
 
   @override
@@ -300,6 +341,22 @@ class _InquiryCardState extends State<InquiryCard> {
                         ),
                       ),
                     ),
+                    if (widget.onDelete != null) ...[
+                      const SizedBox(width: 4),
+                      IconButton(
+                        iconSize: 18,
+                        padding: EdgeInsets.zero,
+                        constraints:
+                            const BoxConstraints(minWidth: 30, minHeight: 30),
+                        tooltip: 'Delete Inquiry',
+                        icon: const Icon(
+                          Icons.delete_outline_rounded,
+                          color: Color(0xFF94A3B8),
+                        ),
+                        hoverColor: const Color(0xFFFEE2E2),
+                        onPressed: () => _confirmDelete(context),
+                      ),
+                    ],
                   ],
                 ),
 

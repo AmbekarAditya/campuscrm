@@ -126,6 +126,10 @@ class LocalInquiriesNotifier extends StateNotifier<List<Inquiry>> {
         if (item.id == id) item.copyWith(remarks: remarks) else item,
     ];
   }
+
+  void removeInquiry(String id) {
+    state = state.where((item) => item.id != id).toList();
+  }
 }
 
 final localInquiriesProvider =
@@ -269,6 +273,18 @@ class InquiryRepository {
         'remarks': remarks,
         'updatedAt': FieldValue.serverTimestamp(),
       });
+    }
+  }
+
+  Future<void> deleteInquiry(String inquiryId, String inquiryName) async {
+    _localNotifier.removeInquiry(inquiryId);
+    await _logger.log(
+      actorName: 'Front Desk',
+      action: 'Deleted lead "$inquiryName" from the system',
+      category: 'Inquiries',
+    );
+    if (_collection != null) {
+      await _collection!.doc(inquiryId).delete();
     }
   }
 }
