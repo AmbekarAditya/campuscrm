@@ -45,18 +45,38 @@ class LocalInquiriesNotifier extends StateNotifier<List<Inquiry>> {
             phone: '+919821778899',
             email: 'kabir.m@example.com',
             status: InquiryStatus.joined,
-            remarks: 'Paid registration fee via UPI. Assigned to Morning Batch A.',
+            remarks: 'Paid registration fee via UPI. Ready for batch assignment.',
             createdAt: DateTime.now().subtract(const Duration(days: 2)),
           ),
           Inquiry(
             id: 'inq-5',
+            name: 'Aarav Sharma',
+            areaCity: 'Dadar West, Mumbai',
+            phone: '+919876543210',
+            email: 'aarav.sharma@example.com',
+            status: InquiryStatus.joined,
+            remarks: 'Joined full course; prefers morning or afternoon timings.',
+            createdAt: DateTime.now().subtract(const Duration(days: 2, hours: 4)),
+          ),
+          Inquiry(
+            id: 'inq-6',
+            name: 'Priya Nair',
+            areaCity: 'Vashi, Navi Mumbai',
+            phone: '+919833221100',
+            email: 'priya.nair@example.com',
+            status: InquiryStatus.joined,
+            remarks: 'First installment paid; enrolled for practical module.',
+            createdAt: DateTime.now().subtract(const Duration(days: 3)),
+          ),
+          Inquiry(
+            id: 'inq-7',
             name: 'Meenal Joshi',
             areaCity: 'Thane West',
             phone: '+919920334455',
             email: 'meenal.joshi@example.com',
             status: InquiryStatus.notInterested,
             remarks: 'Looking for online-only night classes.',
-            createdAt: DateTime.now().subtract(const Duration(days: 3)),
+            createdAt: DateTime.now().subtract(const Duration(days: 4)),
           ),
         ]);
 
@@ -104,6 +124,16 @@ final inquiriesStreamProvider = StreamProvider<List<Inquiry>>((ref) {
   }
   final repository = ref.watch(inquiryRepositoryProvider);
   return repository.watchInquiries();
+});
+
+/// Filtered list of students whose Inquiry status is [InquiryStatus.joined].
+final joinedStudentsProvider = Provider<List<Inquiry>>((ref) {
+  final inquiriesAsync = ref.watch(inquiriesStreamProvider);
+  final List<Inquiry> inquiries =
+      inquiriesAsync.asData?.value ?? ref.watch(localInquiriesProvider);
+  return inquiries
+      .where((inquiry) => inquiry.status == InquiryStatus.joined)
+      .toList();
 });
 
 /// Optional status filter selected on the Inquiries screen (`null` = show all).
