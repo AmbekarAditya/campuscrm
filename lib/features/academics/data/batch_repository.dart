@@ -15,6 +15,7 @@ class LocalBatchesNotifier extends StateNotifier<List<Batch>> {
             endDate: DateTime.now().add(const Duration(days: 75)),
             timings: '09:30 AM - 11:00 AM',
             studentIds: const ['inq-4', 'inq-5'],
+            scheduleDays: const [1, 2, 3, 4, 5], // Weekdays (Mon-Fri)
           ),
           Batch(
             id: 'batch-2',
@@ -23,6 +24,16 @@ class LocalBatchesNotifier extends StateNotifier<List<Batch>> {
             endDate: DateTime.now().add(const Duration(days: 80)),
             timings: '11:30 AM - 01:00 PM',
             studentIds: const ['inq-6'],
+            scheduleDays: const [6, 7], // Weekends (Sat-Sun)
+          ),
+          Batch(
+            id: 'batch-3',
+            name: 'Sunday Masterclass Cohort',
+            startDate: DateTime.now().subtract(const Duration(days: 10)),
+            endDate: DateTime.now().add(const Duration(days: 90)),
+            timings: '02:00 PM - 04:30 PM',
+            studentIds: const ['inq-4', 'inq-6'],
+            scheduleDays: const [7], // Every Sunday
           ),
         ]);
 
@@ -111,7 +122,7 @@ class BatchRepository {
     await _logger.log(
       actorName: 'Owner',
       action:
-          'Created batch "${batch.name}" (${batch.timings}) with ${batch.studentIds.length} joined student(s)',
+          'Created batch "${batch.name}" (${batch.scheduleDescription}, ${batch.timings}) with ${batch.studentIds.length} joined student(s)',
       category: 'Batches',
     );
     if (_collection != null) {

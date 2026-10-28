@@ -26,6 +26,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     return DateFormat('dd MMM yyyy').format(date);
   }
 
+  String _formatWeekday(DateTime date) {
+    return DateFormat('EEEE').format(date);
+  }
+
   bool _isSameDay(DateTime a, DateTime b) {
     return a.year == b.year && a.month == b.month && a.day == b.day;
   }
@@ -53,12 +57,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         .where((inq) => inq.isFollowUpDueOn(_selectedDate))
         .toList();
 
-    // Batches whose Date From - Date To includes the selected dashboard date
+    // Batches scheduled for THIS date (matching date range AND weekday schedule)
     final todaysBatches = allBatches
         .where((batch) => batch.isActiveOn(_selectedDate))
         .toList();
 
-    // Any batches outside the selected date (e.g., future or past batches)
+    // Any batches outside the selected date (different weekday or different date range)
     final otherBatches = allBatches
         .where((batch) => !batch.isActiveOn(_selectedDate))
         .toList();
@@ -141,7 +145,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          isToday ? "Today's Date" : 'Selected Schedule Date',
+                          isToday ? "Today's Schedule" : 'Viewing Schedule For',
                           style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
@@ -346,14 +350,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   children: [
                     Text(
                       isToday
-                          ? "Today's Classes (${_formatShortDate(_selectedDate)})"
-                          : 'Classes on ${_formatShortDate(_selectedDate)}',
+                          ? "Today's Classes (${_formatWeekday(_selectedDate)}, ${_formatShortDate(_selectedDate)})"
+                          : 'Classes on ${_formatWeekday(_selectedDate)}, ${_formatShortDate(_selectedDate)}',
                       style: Theme.of(context).textTheme.headlineMedium,
                     ),
                     const SizedBox(height: 4),
-                    const Text(
-                      'Click any class below to mark attendance for its enrolled students.',
-                      style: TextStyle(
+                    Text(
+                      'Showing batches running on ${_formatWeekday(_selectedDate)}s. Click any batch to mark attendance.',
+                      style: const TextStyle(
                         fontSize: 13,
                         color: Color(0xFF475569),
                         fontWeight: FontWeight.w500,
@@ -370,12 +374,26 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(20),
-                child: Text(
-                  'No batches scheduled for ${_formatShortDate(_selectedDate)}. Create a batch in the "Batches" tab with dates covering this day.',
-                  style: const TextStyle(
-                    fontSize: 15,
-                    color: Color(0xFF64748B),
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'No classes scheduled on ${_formatWeekday(_selectedDate)}, ${_formatShortDate(_selectedDate)}.',
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF0F172A),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Batches only appear on days matching their weekly schedule (e.g. Every Day, Every Sunday, Mon-Wed-Fri). You can create or edit a batch in the "Batches" tab.',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Color(0xFF64748B),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             )
@@ -390,6 +408,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
               return _TodayClassTile(
                 batchName: batch.name,
+                scheduleDescription: batch.scheduleDescription,
                 timeSlot: batch.timings,
                 dateRange:
                     '${_formatShortDate(batch.startDate)} – ${_formatShortDate(batch.endDate)}',
@@ -407,11 +426,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               );
             }),
 
-          // Other / Upcoming Batches (outside selected date)
+          // Other / Upcoming Batches (outside selected date/weekday)
           if (otherBatches.isNotEmpty) ...[
             const SizedBox(height: 20),
             Text(
-              'Other Scheduled Batches',
+              'Other Batches (Not Active on ${_formatWeekday(_selectedDate)}s)',
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 10),
@@ -419,6 +438,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               final enrolledStudents = allInquiries
                   .where((inq) => batch.studentIds.contains(inq.id))
                   .toList();
+              final isWithinRange = batch.isWithinDateRange(_selectedDate);
+              final reasonText = isWithinRange
+                  ? 'Runs ${batch.scheduleDescription} (No class on ${_formatWeekday(_selectedDate)})'
+                  : 'Batch duration: ${_formatShortDate(batch.startDate)} – ${_formatShortDate(batch.endDate)}';
+
               return Card(
                 child: ListTile(
                   contentPadding:
@@ -430,20 +454,20 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   subtitle: Padding(
                     padding: const EdgeInsets.only(top: 4),
                     child: Text(
-                      '${_formatShortDate(batch.startDate)} – ${_formatShortDate(batch.endDate)}  •  ${batch.timings}  •  ${enrolledStudents.length} Student(s)',
+                      '${batch.scheduleDescription} • ${batch.timings} • ${enrolledStudents.length} Student(s)\n$reasonText',
                       style: const TextStyle(fontSize: 13),
                     ),
                   ),
                   trailing: Container(
                     padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
                       color: const Color(0xFFF1F5F9),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Text(
-                      'Not Active Today',
-                      style: TextStyle(
+                    child: Text(
+                      isWithinRange ? 'Off Today' : 'Out of Range',
+                      style: const TextStyle(
                         fontSize: 12,
                         color: Color(0xFF475569),
                         fontWeight: FontWeight.w600,
@@ -509,7 +533,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
                   subtitle: Text(
-                    '${batch.timings} • ${enrolled.length} Student(s)',
+                    '${batch.scheduleDescription} • ${batch.timings} • ${enrolled.length} Student(s)',
                   ),
                   trailing: Text(
                     marked != null
@@ -568,7 +592,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   Text('Mark Attendance • ${batch.name}'),
                   const SizedBox(height: 4),
                   Text(
-                    'Date: ${_formatFullDate(_selectedDate)}  |  ${batch.timings}',
+                    '${batch.scheduleDescription} | ${_formatFullDate(_selectedDate)} | ${batch.timings}',
                     style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
@@ -745,6 +769,7 @@ class _ActionAlertRow extends StatelessWidget {
 
 class _TodayClassTile extends StatelessWidget {
   final String batchName;
+  final String scheduleDescription;
   final String timeSlot;
   final String dateRange;
   final String scheduleDateLabel;
@@ -756,6 +781,7 @@ class _TodayClassTile extends StatelessWidget {
 
   const _TodayClassTile({
     required this.batchName,
+    required this.scheduleDescription,
     required this.timeSlot,
     required this.dateRange,
     required this.scheduleDateLabel,
@@ -796,6 +822,31 @@ class _TodayClassTile extends StatelessWidget {
                     spacing: 10,
                     runSpacing: 6,
                     children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFEF3C7),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: const Color(0xFFFDE68A)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.repeat_rounded,
+                                size: 14, color: Color(0xFFB45309)),
+                            const SizedBox(width: 4),
+                            Text(
+                              scheduleDescription,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF92400E),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -825,7 +876,7 @@ class _TodayClassTile extends StatelessWidget {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            'Batch Dates: $dateRange',
+                            'Dates: $dateRange',
                             style: const TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w600,

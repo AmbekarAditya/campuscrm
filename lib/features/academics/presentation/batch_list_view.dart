@@ -110,7 +110,7 @@ class BatchListView extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Header: Batch Name & Edit Students Button
+                    // Header: Batch Name & Action Buttons
                     Wrap(
                       spacing: 12,
                       runSpacing: 12,
@@ -130,17 +130,23 @@ class BatchListView extends ConsumerWidget {
                               runSpacing: 8,
                               children: [
                                 _InfoBadge(
-                                  icon: Icons.date_range_rounded,
-                                  text:
-                                      '${_formatDate(batch.startDate)} – ${_formatDate(batch.endDate)}',
-                                  bgColor: const Color(0xFFDBEAFE),
-                                  fgColor: const Color(0xFF1E40AF),
+                                  icon: Icons.repeat_rounded,
+                                  text: batch.scheduleDescription,
+                                  bgColor: const Color(0xFFFEF3C7),
+                                  fgColor: const Color(0xFFB45309),
                                 ),
                                 _InfoBadge(
                                   icon: Icons.access_time_filled_rounded,
                                   text: batch.timings,
                                   bgColor: const Color(0xFFF3E8FF),
                                   fgColor: const Color(0xFF7E22CE),
+                                ),
+                                _InfoBadge(
+                                  icon: Icons.date_range_rounded,
+                                  text:
+                                      '${_formatDate(batch.startDate)} – ${_formatDate(batch.endDate)}',
+                                  bgColor: const Color(0xFFDBEAFE),
+                                  fgColor: const Color(0xFF1E40AF),
                                 ),
                                 _InfoBadge(
                                   icon: Icons.people_alt_rounded,
@@ -185,7 +191,64 @@ class BatchListView extends ConsumerWidget {
                       ],
                     ),
 
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
+
+                    // Weekly Schedule Dots (Mon to Sun)
+                    Row(
+                      children: [
+                        const Text(
+                          'Weekly Schedule: ',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF64748B),
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        ...[1, 2, 3, 4, 5, 6, 7].map((day) {
+                          final isActive =
+                              batch.activeScheduleDays.contains(day);
+                          const letters = [
+                            'M',
+                            'T',
+                            'W',
+                            'T',
+                            'F',
+                            'S',
+                            'S'
+                          ];
+                          return Container(
+                            width: 22,
+                            height: 22,
+                            margin: const EdgeInsets.only(right: 4),
+                            decoration: BoxDecoration(
+                              color: isActive
+                                  ? const Color(0xFF1E40AF)
+                                  : const Color(0xFFF1F5F9),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(
+                                color: isActive
+                                    ? const Color(0xFF1E40AF)
+                                    : const Color(0xFFE2E8F0),
+                              ),
+                            ),
+                            alignment: Alignment.center,
+                            child: Text(
+                              letters[day - 1],
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: isActive
+                                    ? Colors.white
+                                    : const Color(0xFF94A3B8),
+                              ),
+                            ),
+                          );
+                        }),
+                      ],
+                    ),
+
+                    const SizedBox(height: 14),
                     const Divider(height: 1, color: Color(0xFFE2E8F0)),
                     const SizedBox(height: 14),
 
@@ -263,6 +326,9 @@ class BatchListView extends ConsumerWidget {
     final timingsCtrl = TextEditingController(text: '10:00 AM - 11:30 AM');
     final selectedStudentIds = <String>{};
 
+    // Days selection: default to Daily [1,2,3,4,5,6,7]
+    final selectedDays = <int>{1, 2, 3, 4, 5, 6, 7};
+
     String formatTimeOfDay(BuildContext ctx, TimeOfDay tod) {
       final localizations = MaterialLocalizations.of(ctx);
       return localizations.formatTimeOfDay(tod);
@@ -273,10 +339,21 @@ class BatchListView extends ConsumerWidget {
       builder: (dialogContext) {
         return StatefulBuilder(
           builder: (ctx, setDialogState) {
+            // Helper to get current schedule description preview
+            final dummyBatch = Batch(
+              id: '',
+              name: '',
+              startDate: startDate,
+              endDate: endDate,
+              timings: '',
+              studentIds: const [],
+              scheduleDays: selectedDays.toList(),
+            );
+
             return AlertDialog(
               title: const Text('Create New Batch'),
               content: SizedBox(
-                width: 540,
+                width: 560,
                 child: SingleChildScrollView(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -287,13 +364,181 @@ class BatchListView extends ConsumerWidget {
                         controller: nameCtrl,
                         decoration: const InputDecoration(
                           labelText: 'Batch Name *',
-                          hintText: 'E.g. Evening Fast-Track Batch C',
+                          hintText: 'E.g. Sunday Masterclass or Weekday Fast-Track',
                           prefixIcon: Icon(Icons.class_outlined),
                         ),
                       ),
                       const SizedBox(height: 16),
 
-                      // 2. Date From & Date To
+                      // 2. Class Schedule / Recurring Days (Everyday, Sunday, Weekdays, etc.)
+                      Text(
+                        'Class Schedule (Recurring Days)',
+                        style: Theme.of(ctx).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 6),
+
+                      // Quick Preset Chips
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            _SchedulePresetChip(
+                              label: 'Every Day',
+                              isSelected: selectedDays.length == 7,
+                              onTap: () {
+                                setDialogState(() {
+                                  selectedDays.clear();
+                                  selectedDays.addAll([1, 2, 3, 4, 5, 6, 7]);
+                                });
+                              },
+                            ),
+                            const SizedBox(width: 6),
+                            _SchedulePresetChip(
+                              label: 'Weekdays (Mon–Fri)',
+                              isSelected: selectedDays.length == 5 &&
+                                  selectedDays.containsAll([1, 2, 3, 4, 5]),
+                              onTap: () {
+                                setDialogState(() {
+                                  selectedDays.clear();
+                                  selectedDays.addAll([1, 2, 3, 4, 5]);
+                                });
+                              },
+                            ),
+                            const SizedBox(width: 6),
+                            _SchedulePresetChip(
+                              label: 'Weekends (Sat–Sun)',
+                              isSelected: selectedDays.length == 2 &&
+                                  selectedDays.containsAll([6, 7]),
+                              onTap: () {
+                                setDialogState(() {
+                                  selectedDays.clear();
+                                  selectedDays.addAll([6, 7]);
+                                });
+                              },
+                            ),
+                            const SizedBox(width: 6),
+                            _SchedulePresetChip(
+                              label: 'Every Sunday',
+                              isSelected:
+                                  selectedDays.length == 1 && selectedDays.contains(7),
+                              onTap: () {
+                                setDialogState(() {
+                                  selectedDays.clear();
+                                  selectedDays.add(7);
+                                });
+                              },
+                            ),
+                            const SizedBox(width: 6),
+                            _SchedulePresetChip(
+                              label: 'Every Saturday',
+                              isSelected:
+                                  selectedDays.length == 1 && selectedDays.contains(6),
+                              onTap: () {
+                                setDialogState(() {
+                                  selectedDays.clear();
+                                  selectedDays.add(6);
+                                });
+                              },
+                            ),
+                            const SizedBox(width: 6),
+                            _SchedulePresetChip(
+                              label: 'Mon, Wed, Fri',
+                              isSelected: selectedDays.length == 3 &&
+                                  selectedDays.containsAll([1, 3, 5]),
+                              onTap: () {
+                                setDialogState(() {
+                                  selectedDays.clear();
+                                  selectedDays.addAll([1, 3, 5]);
+                                });
+                              },
+                            ),
+                            const SizedBox(width: 6),
+                            _SchedulePresetChip(
+                              label: 'Tue, Thu, Sat',
+                              isSelected: selectedDays.length == 3 &&
+                                  selectedDays.containsAll([2, 4, 6]),
+                              onTap: () {
+                                setDialogState(() {
+                                  selectedDays.clear();
+                                  selectedDays.addAll([2, 4, 6]);
+                                });
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+
+                      // Day-by-Day Toggle Buttons (Mon to Sun)
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          (day: 1, name: 'Mon'),
+                          (day: 2, name: 'Tue'),
+                          (day: 3, name: 'Wed'),
+                          (day: 4, name: 'Thu'),
+                          (day: 5, name: 'Fri'),
+                          (day: 6, name: 'Sat'),
+                          (day: 7, name: 'Sun'),
+                        ].map((d) {
+                          final isSelected = selectedDays.contains(d.day);
+                          return FilterChip(
+                            label: Text(d.name),
+                            selected: isSelected,
+                            selectedColor: const Color(0xFFDBEAFE),
+                            labelStyle: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: isSelected
+                                  ? const Color(0xFF1E40AF)
+                                  : const Color(0xFF475569),
+                            ),
+                            onSelected: (checked) {
+                              setDialogState(() {
+                                if (checked) {
+                                  selectedDays.add(d.day);
+                                } else {
+                                  if (selectedDays.length > 1) {
+                                    selectedDays.remove(d.day);
+                                  }
+                                }
+                              });
+                            },
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 6),
+
+                      // Schedule Preview Badge
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFEF3C7),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: const Color(0xFFFDE68A)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.repeat_rounded,
+                                size: 16, color: Color(0xFFB45309)),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Selected Schedule: ${dummyBatch.scheduleDescription}',
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF92400E),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // 3. Date From & Date To
                       Text(
                         'Batch Duration (Date From – Date To)',
                         style: Theme.of(ctx).textTheme.titleMedium,
@@ -304,7 +549,7 @@ class BatchListView extends ConsumerWidget {
                           Expanded(
                             child: OutlinedButton.icon(
                               style: OutlinedButton.styleFrom(
-                                minimumSize: const Size(0, 52),
+                                minimumSize: const Size(0, 50),
                               ),
                               onPressed: () async {
                                 final picked = await showDatePicker(
@@ -323,7 +568,8 @@ class BatchListView extends ConsumerWidget {
                                   });
                                 }
                               },
-                              icon: const Icon(Icons.calendar_today_outlined),
+                              icon: const Icon(Icons.calendar_today_outlined,
+                                  size: 18),
                               label: Text('From: ${_formatDate(startDate)}'),
                             ),
                           ),
@@ -331,7 +577,7 @@ class BatchListView extends ConsumerWidget {
                           Expanded(
                             child: OutlinedButton.icon(
                               style: OutlinedButton.styleFrom(
-                                minimumSize: const Size(0, 52),
+                                minimumSize: const Size(0, 50),
                               ),
                               onPressed: () async {
                                 final picked = await showDatePicker(
@@ -344,7 +590,7 @@ class BatchListView extends ConsumerWidget {
                                   setDialogState(() => endDate = picked);
                                 }
                               },
-                              icon: const Icon(Icons.event_outlined),
+                              icon: const Icon(Icons.event_outlined, size: 18),
                               label: Text('To: ${_formatDate(endDate)}'),
                             ),
                           ),
@@ -352,7 +598,7 @@ class BatchListView extends ConsumerWidget {
                       ),
                       const SizedBox(height: 16),
 
-                      // 3. Batch Timings
+                      // 4. Batch Timings
                       Text(
                         'Class Timings',
                         style: Theme.of(ctx).textTheme.titleMedium,
@@ -378,7 +624,8 @@ class BatchListView extends ConsumerWidget {
                                   });
                                 }
                               },
-                              icon: const Icon(Icons.schedule_rounded),
+                              icon: const Icon(Icons.schedule_rounded,
+                                  size: 18),
                               label: Text(
                                 'Start: ${formatTimeOfDay(ctx, startTime)}',
                               ),
@@ -403,7 +650,8 @@ class BatchListView extends ConsumerWidget {
                                   });
                                 }
                               },
-                              icon: const Icon(Icons.schedule_send_rounded),
+                              icon: const Icon(Icons.schedule_send_rounded,
+                                  size: 18),
                               label: Text(
                                 'End: ${formatTimeOfDay(ctx, endTime)}',
                               ),
@@ -416,12 +664,12 @@ class BatchListView extends ConsumerWidget {
                         controller: timingsCtrl,
                         decoration: const InputDecoration(
                           labelText: 'Timings Label',
-                          hintText: 'E.g. 10:00 AM - 11:30 AM (Mon–Fri)',
+                          hintText: 'E.g. 10:00 AM - 11:30 AM',
                         ),
                       ),
                       const SizedBox(height: 20),
 
-                      // 4. Select Students with Status == Joined
+                      // 5. Select Students with Status == Joined
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -466,7 +714,7 @@ class BatchListView extends ConsumerWidget {
                         )
                       else
                         Container(
-                          constraints: const BoxConstraints(maxHeight: 220),
+                          constraints: const BoxConstraints(maxHeight: 200),
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(12),
@@ -544,6 +792,7 @@ class BatchListView extends ConsumerWidget {
                       );
                       return;
                     }
+                    final sortedDays = selectedDays.toList()..sort();
                     await ref.read(batchRepositoryProvider).createBatch(
                           Batch(
                             id: '',
@@ -554,6 +803,7 @@ class BatchListView extends ConsumerWidget {
                                 ? '10:00 AM - 11:30 AM'
                                 : timingsCtrl.text.trim(),
                             studentIds: selectedStudentIds.toList(),
+                            scheduleDays: sortedDays,
                           ),
                         );
                     if (dialogContext.mounted) {
@@ -563,7 +813,7 @@ class BatchListView extends ConsumerWidget {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(
-                            'Created "$batchName" with ${selectedStudentIds.length} joined student(s).',
+                            'Created "$batchName" (${dummyBatch.scheduleDescription}) with ${selectedStudentIds.length} joined student(s).',
                           ),
                         ),
                       );
@@ -704,6 +954,33 @@ class BatchListView extends ConsumerWidget {
   }
 }
 
+class _SchedulePresetChip extends StatelessWidget {
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _SchedulePresetChip({
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ActionChip(
+      label: Text(label),
+      backgroundColor:
+          isSelected ? const Color(0xFF1E40AF) : const Color(0xFFF1F5F9),
+      labelStyle: TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.w700,
+        color: isSelected ? Colors.white : const Color(0xFF334155),
+      ),
+      onPressed: onTap,
+    );
+  }
+}
+
 class _InfoBadge extends StatelessWidget {
   final IconData icon;
   final String text;
@@ -720,22 +997,22 @@ class _InfoBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
         color: bgColor,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: fgColor),
-          const SizedBox(width: 6),
+          Icon(icon, size: 15, color: fgColor),
+          const SizedBox(width: 5),
           Text(
             text,
             style: TextStyle(
               color: fgColor,
               fontWeight: FontWeight.w700,
-              fontSize: 13,
+              fontSize: 12,
             ),
           ),
         ],
