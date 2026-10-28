@@ -23,7 +23,7 @@ enum InquiryStatus {
   Color get backgroundColor {
     switch (this) {
       case InquiryStatus.newLead:
-        return const Color(0xFFDBEAFE); // Soft Blue
+        return const Color(0xFFEEF2FF); // Soft Indigo
       case InquiryStatus.followUp:
         return const Color(0xFFFEF3C7); // Warm Amber
       case InquiryStatus.trialScheduled:
@@ -39,7 +39,7 @@ enum InquiryStatus {
   Color get foregroundColor {
     switch (this) {
       case InquiryStatus.newLead:
-        return const Color(0xFF1D4ED8);
+        return const Color(0xFF4F46E5);
       case InquiryStatus.followUp:
         return const Color(0xFFB45309);
       case InquiryStatus.trialScheduled:

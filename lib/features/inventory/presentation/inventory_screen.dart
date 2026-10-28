@@ -52,7 +52,7 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
                 children: [
                   Icon(
                     isEditing ? Icons.edit_note_rounded : Icons.add_box_rounded,
-                    color: const Color(0xFF1E40AF),
+                    color: const Color(0xFF4F46E5),
                   ),
                   const SizedBox(width: 8),
                   Text(isEditing ? 'Edit Stock Item' : 'Add Stock Item'),
@@ -329,7 +329,7 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
               title: Row(
                 children: [
                   const Icon(Icons.checklist_rounded,
-                      color: Color(0xFF1E40AF)),
+                      color: Color(0xFF4F46E5)),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -649,7 +649,7 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
                             size: 20,
                             color: isLowStock
                                 ? const Color(0xFFDC2626)
-                                : const Color(0xFF1E40AF),
+                                : const Color(0xFF4F46E5),
                           ),
                           const SizedBox(width: 8),
                           Expanded(
@@ -943,10 +943,10 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
                             radius: isMobile ? 18 : 20,
                             backgroundColor: isComplete
                                 ? const Color(0xFFDCFCE7)
-                                : const Color(0xFFEFF6FF),
+                                : const Color(0xFFEEF2FF),
                             foregroundColor: isComplete
                                 ? const Color(0xFF15803D)
-                                : const Color(0xFF1E40AF),
+                                : const Color(0xFF4F46E5),
                             child: Text(
                               _getInitials(student.name),
                               style: TextStyle(
@@ -978,7 +978,7 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
                                   style: TextStyle(
                                     fontSize: 12,
                                     color: enrolledBatches.isNotEmpty
-                                        ? const Color(0xFF1E40AF)
+                                        ? const Color(0xFF4F46E5)
                                         : const Color(0xFF64748B),
                                     fontWeight: enrolledBatches.isNotEmpty
                                         ? FontWeight.w600
@@ -1047,7 +1047,7 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
                           backgroundColor: const Color(0xFFE2E8F0),
                           color: isComplete
                               ? const Color(0xFF15803D)
-                              : const Color(0xFF1E40AF),
+                              : const Color(0xFF4F46E5),
                         ),
                       ),
                       const SizedBox(height: 14),

@@ -158,7 +158,7 @@ class _AddStaffFormState extends ConsumerState<AddStaffForm> {
                     children: [
                       const Icon(
                         Icons.lock_person_outlined,
-                        color: Color(0xFF1E40AF),
+                        color: Color(0xFF4F46E5),
                         size: 20,
                       ),
                       const SizedBox(width: 8),

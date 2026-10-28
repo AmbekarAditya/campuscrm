@@ -47,10 +47,10 @@ class StudentProfileScreen extends StatelessWidget {
                       assignedBatch,
                       style: const TextStyle(
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFF1D4ED8),
+                        color: Color(0xFF4338CA),
                       ),
                     ),
-                    backgroundColor: const Color(0xFFDBEAFE),
+                    backgroundColor: const Color(0xFFE0E7FF),
                   ),
                   const Divider(height: 32),
                   ListTile(

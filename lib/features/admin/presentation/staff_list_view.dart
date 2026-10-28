@@ -42,7 +42,7 @@ class _StaffListViewState extends ConsumerState<StaffListView> {
             return AlertDialog(
               title: const Row(
                 children: [
-                  Icon(Icons.lock_outline_rounded, color: Color(0xFF1E40AF)),
+                  Icon(Icons.lock_outline_rounded, color: Color(0xFF4F46E5)),
                   SizedBox(width: 8),
                   Text('Staff Member Login'),
                 ],
@@ -258,14 +258,14 @@ class _StaffListViewState extends ConsumerState<StaffListView> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                color: const Color(0xFFEFF6FF),
+                color: const Color(0xFFEEF2FF),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFBFDBFE)),
+                border: Border.all(color: const Color(0xFFC7D2FE)),
               ),
               child: Row(
                 children: [
                   const Icon(Icons.verified_user_rounded,
-                      color: Color(0xFF1E40AF), size: 22),
+                      color: Color(0xFF4F46E5), size: 22),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
@@ -273,7 +273,7 @@ class _StaffListViewState extends ConsumerState<StaffListView> {
                       style: const TextStyle(
                         fontSize: 13.5,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFF1E40AF),
+                        color: Color(0xFF4F46E5),
                       ),
                     ),
                   ),
@@ -378,8 +378,8 @@ class _StaffListViewState extends ConsumerState<StaffListView> {
                         children: [
                           CircleAvatar(
                             radius: isMobile ? 18 : 22,
-                            backgroundColor: const Color(0xFFEFF6FF),
-                            foregroundColor: const Color(0xFF1E40AF),
+                            backgroundColor: const Color(0xFFEEF2FF),
+                            foregroundColor: const Color(0xFF4F46E5),
                             child: Text(
                               _getInitials(staff.name),
                               style: TextStyle(
@@ -436,7 +436,7 @@ class _StaffListViewState extends ConsumerState<StaffListView> {
                                           const Icon(
                                             Icons.alternate_email_rounded,
                                             size: 13,
-                                            color: Color(0xFF1E40AF),
+                                            color: Color(0xFF4F46E5),
                                           ),
                                           const SizedBox(width: 4),
                                           Text(

@@ -164,7 +164,7 @@ class _PaymentsLedgerScreenState extends ConsumerState<PaymentsLedgerScreen> {
             return AlertDialog(
               title: const Row(
                 children: [
-                  Icon(Icons.search_rounded, color: Color(0xFF1E40AF)),
+                  Icon(Icons.search_rounded, color: Color(0xFF4F46E5)),
                   SizedBox(width: 8),
                   Text('Search & Select Student'),
                 ],
@@ -222,7 +222,7 @@ class _PaymentsLedgerScreenState extends ConsumerState<PaymentsLedgerScreen> {
                                   selected: isSelected,
                                   leading: CircleAvatar(
                                     backgroundColor: isSelected
-                                        ? const Color(0xFF1E40AF)
+                                        ? const Color(0xFF4F46E5)
                                         : const Color(0xFFE2E8F0),
                                     foregroundColor: isSelected
                                         ? Colors.white
@@ -240,7 +240,7 @@ class _PaymentsLedgerScreenState extends ConsumerState<PaymentsLedgerScreen> {
                                     style: TextStyle(
                                       fontSize: 12,
                                       color: enrolledBatches.isNotEmpty
-                                          ? const Color(0xFF1D4ED8)
+                                          ? const Color(0xFF4338CA)
                                           : const Color(0xFF64748B),
                                       fontWeight: enrolledBatches.isNotEmpty
                                           ? FontWeight.w600
@@ -547,12 +547,12 @@ class _PaymentsLedgerScreenState extends ConsumerState<PaymentsLedgerScreen> {
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFEFF6FF),
+                          color: const Color(0xFFEEF2FF),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: const Icon(
                           Icons.add_card_rounded,
-                          color: Color(0xFF1E40AF),
+                          color: Color(0xFF4F46E5),
                           size: 20,
                         ),
                       ),
@@ -640,11 +640,11 @@ class _PaymentsLedgerScreenState extends ConsumerState<PaymentsLedgerScreen> {
                         IconButton.filledTonal(
                           style: IconButton.styleFrom(
                             minimumSize: const Size(48, 48),
-                            backgroundColor: const Color(0xFFEFF6FF),
-                            foregroundColor: const Color(0xFF1E40AF),
+                            backgroundColor: const Color(0xFFEEF2FF),
+                            foregroundColor: const Color(0xFF4F46E5),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
-                              side: const BorderSide(color: Color(0xFFBFDBFE)),
+                              side: const BorderSide(color: Color(0xFFC7D2FE)),
                             ),
                           ),
                           tooltip: 'Search Student',
@@ -696,7 +696,7 @@ class _PaymentsLedgerScreenState extends ConsumerState<PaymentsLedgerScreen> {
                               const Icon(
                                 Icons.school_rounded,
                                 size: 16,
-                                color: Color(0xFF1E40AF),
+                                color: Color(0xFF4F46E5),
                               ),
                               const SizedBox(width: 6),
                               Expanded(
@@ -722,7 +722,7 @@ class _PaymentsLedgerScreenState extends ConsumerState<PaymentsLedgerScreen> {
                                     icon: const Icon(
                                       Icons.swap_horiz_rounded,
                                       size: 16,
-                                      color: Color(0xFF1E40AF),
+                                      color: Color(0xFF4F46E5),
                                     ),
                                     items: studentEnrolledBatches.map((b) {
                                       return DropdownMenuItem<String>(
@@ -884,7 +884,7 @@ class _PaymentsLedgerScreenState extends ConsumerState<PaymentsLedgerScreen> {
                                   const Icon(
                                     Icons.calendar_today_outlined,
                                     size: 14,
-                                    color: Color(0xFF1E40AF),
+                                    color: Color(0xFF4F46E5),
                                   ),
                                   const SizedBox(width: 6),
                                   Expanded(
@@ -1056,7 +1056,7 @@ class _PaymentsLedgerScreenState extends ConsumerState<PaymentsLedgerScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFEFF6FF),
+                  color: const Color(0xFFEEF2FF),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -1064,7 +1064,7 @@ class _PaymentsLedgerScreenState extends ConsumerState<PaymentsLedgerScreen> {
                   style: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFF1E40AF),
+                    color: Color(0xFF4F46E5),
                   ),
                 ),
               ),
@@ -1373,7 +1373,7 @@ class _PaymentsLedgerScreenState extends ConsumerState<PaymentsLedgerScreen> {
                             const SizedBox(width: 8),
                             ElevatedButton.icon(
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF1E40AF),
+                                backgroundColor: const Color(0xFF4F46E5),
                                 foregroundColor: Colors.white,
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 10,

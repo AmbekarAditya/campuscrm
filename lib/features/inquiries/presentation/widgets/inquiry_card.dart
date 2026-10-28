@@ -480,8 +480,8 @@ class _InquiryCardState extends State<InquiryCard> {
                       child: _ActionIconButton(
                         icon: Icons.phone_in_talk_rounded,
                         label: 'Call',
-                        color: const Color(0xFF2563EB),
-                        backgroundColor: const Color(0xFFEFF6FF),
+                        color: const Color(0xFF4F46E5),
+                        backgroundColor: const Color(0xFFEEF2FF),
                         onPressed: () => _launchActionUrl(
                           context,
                           Uri.parse('tel:${inquiry.phone}'),

@@ -105,9 +105,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
-              color: const Color(0xFFEFF6FF),
+              color: const Color(0xFFEEF2FF),
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: const Color(0xFFBFDBFE), width: 1.2),
+              border: Border.all(color: const Color(0xFFC7D2FE), width: 1.2),
             ),
             child: Wrap(
               spacing: 12,
@@ -120,7 +120,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   children: [
                     const Icon(
                       Icons.today_rounded,
-                      color: Color(0xFF1E40AF),
+                      color: Color(0xFF4F46E5),
                       size: 26,
                     ),
                     const SizedBox(width: 10),
@@ -132,7 +132,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
-                            color: Color(0xFF1D4ED8),
+                            color: Color(0xFF4338CA),
                           ),
                         ),
                         Text(
@@ -140,7 +140,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           style: Theme.of(context)
                               .textTheme
                               .titleLarge
-                              ?.copyWith(color: const Color(0xFF1E3A8A)),
+                              ?.copyWith(color: const Color(0xFF312E81)),
                         ),
                       ],
                     ),
@@ -224,7 +224,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 const SizedBox(height: 6),
                 _ActionAlertRow(
                   badgeText: '$newLeadsCount New Leads',
-                  badgeColor: const Color(0xFF2563EB),
+                  badgeColor: const Color(0xFF4F46E5),
                   description: 'Uncontacted inquiries awaiting follow-up.',
                 ),
               ],
@@ -298,7 +298,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       ),
                       IconButton(
                         icon: const Icon(Icons.phone_in_talk_rounded,
-                            color: Color(0xFF2563EB), size: 20),
+                            color: Color(0xFF4F46E5), size: 20),
                         tooltip: 'Call ${lead.name}',
                         onPressed: () =>
                             _launchActionUrl(Uri.parse('tel:${lead.phone}')),
@@ -698,7 +698,7 @@ class _TodayClassTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final badgeColor = isAttendanceMarked
         ? const Color(0xFF15803D)
-        : const Color(0xFF1E40AF);
+        : const Color(0xFF4F46E5);
 
     return Card(
       child: InkWell(
@@ -794,7 +794,7 @@ class _TodayClassTile extends StatelessWidget {
                           const Icon(
                             Icons.date_range_rounded,
                             size: 15,
-                            color: Color(0xFF1D4ED8),
+                            color: Color(0xFF4338CA),
                           ),
                           const SizedBox(width: 4),
                           Text(
@@ -802,7 +802,7 @@ class _TodayClassTile extends StatelessWidget {
                             style: const TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
-                              color: Color(0xFF1D4ED8),
+                              color: Color(0xFF4338CA),
                             ),
                           ),
                         ],

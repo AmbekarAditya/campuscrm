@@ -22,14 +22,14 @@ class BookingCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
-                color: const Color(0xFFDBEAFE),
+                color: const Color(0xFFE0E7FF),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
                 timeSlot,
                 style: const TextStyle(
                   fontWeight: FontWeight.w700,
-                  color: Color(0xFF1E40AF),
+                  color: Color(0xFF4F46E5),
                 ),
               ),
             ),

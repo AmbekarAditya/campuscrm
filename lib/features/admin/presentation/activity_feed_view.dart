@@ -20,7 +20,7 @@ class ActivityFeedView extends ConsumerWidget {
           itemBuilder: (context, index) {
             final item = localLogs[index];
             return ListTile(
-              leading: const Icon(Icons.history_rounded, color: Color(0xFF1E40AF)),
+              leading: const Icon(Icons.history_rounded, color: Color(0xFF4F46E5)),
               title: Text(
                 '${item.actorName} — ${item.action}',
                 style: const TextStyle(fontWeight: FontWeight.w500),

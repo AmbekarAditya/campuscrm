@@ -155,8 +155,8 @@ class BatchListView extends ConsumerWidget {
                                   icon: Icons.date_range_rounded,
                                   text:
                                       '${_formatDate(batch.startDate)} – ${_formatDate(batch.endDate)}',
-                                  bgColor: const Color(0xFFDBEAFE),
-                                  fgColor: const Color(0xFF1E40AF),
+                                  bgColor: const Color(0xFFE0E7FF),
+                                  fgColor: const Color(0xFF4F46E5),
                                 ),
                                 _InfoBadge(
                                   icon: Icons.people_alt_rounded,
@@ -175,8 +175,8 @@ class BatchListView extends ConsumerWidget {
                           children: [
                             OutlinedButton.icon(
                               style: OutlinedButton.styleFrom(
-                                foregroundColor: const Color(0xFF1E40AF),
-                                side: const BorderSide(color: Color(0xFF93C5FD)),
+                                foregroundColor: const Color(0xFF4F46E5),
+                                side: const BorderSide(color: Color(0xFFA5B4FC)),
                               ),
                               onPressed: () => _showBatchFormDialog(
                                 context,
@@ -248,12 +248,12 @@ class BatchListView extends ConsumerWidget {
                             margin: const EdgeInsets.only(right: 4),
                             decoration: BoxDecoration(
                               color: isActive
-                                  ? const Color(0xFF1E40AF)
+                                  ? const Color(0xFF4F46E5)
                                   : const Color(0xFFF1F5F9),
                               borderRadius: BorderRadius.circular(6),
                               border: Border.all(
                                 color: isActive
-                                    ? const Color(0xFF1E40AF)
+                                    ? const Color(0xFF4F46E5)
                                     : const Color(0xFFE2E8F0),
                               ),
                             ),
@@ -297,7 +297,7 @@ class BatchListView extends ConsumerWidget {
                         children: enrolledStudents.map((student) {
                           return ActionChip(
                             avatar: const CircleAvatar(
-                              backgroundColor: Color(0xFF1E40AF),
+                              backgroundColor: Color(0xFF4F46E5),
                               child: Icon(
                                 Icons.person,
                                 size: 16,
@@ -561,12 +561,12 @@ class BatchListView extends ConsumerWidget {
                           return FilterChip(
                             label: Text(d.name),
                             selected: isSelected,
-                            selectedColor: const Color(0xFFDBEAFE),
+                            selectedColor: const Color(0xFFE0E7FF),
                             labelStyle: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w700,
                               color: isSelected
-                                  ? const Color(0xFF1E40AF)
+                                  ? const Color(0xFF4F46E5)
                                   : const Color(0xFF475569),
                             ),
                             onSelected: (checked) {
@@ -1080,7 +1080,7 @@ class _SchedulePresetChip extends StatelessWidget {
     return ActionChip(
       label: Text(label),
       backgroundColor:
-          isSelected ? const Color(0xFF1E40AF) : const Color(0xFFF1F5F9),
+          isSelected ? const Color(0xFF4F46E5) : const Color(0xFFF1F5F9),
       labelStyle: TextStyle(
         fontSize: 12,
         fontWeight: FontWeight.w700,

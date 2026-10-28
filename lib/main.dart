@@ -198,8 +198,8 @@ class _MoreModulesScreen extends StatelessWidget {
             title: 'Bookings & Appointments',
             subtitle: '1-on-1 sessions, shared rooms & model bookings',
             icon: Icons.calendar_month_rounded,
-            iconColor: const Color(0xFF2563EB),
-            iconBg: const Color(0xFFEFF6FF),
+            iconColor: const Color(0xFF4F46E5),
+            iconBg: const Color(0xFFEEF2FF),
             onTap: () => onSelectModule(4),
           ),
           _ModuleCard(
