@@ -42,6 +42,10 @@ class _PaymentsLedgerScreenState extends ConsumerState<PaymentsLedgerScreen> {
     return DateFormat('dd MMM yyyy').format(date);
   }
 
+  String _formatShortDate(DateTime date) {
+    return DateFormat('dd MMM').format(date);
+  }
+
   String _getInitials(String name) {
     final trimmed = name.trim();
     if (trimmed.isEmpty) return '?';
@@ -63,17 +67,14 @@ class _PaymentsLedgerScreenState extends ConsumerState<PaymentsLedgerScreen> {
     setState(() {
       _selectedStudentId = studentId;
 
-      // Find all batches where this student is enrolled
       final enrolledBatches = allBatches
           .where((b) => b.studentIds.contains(studentId))
           .toList();
 
       if (enrolledBatches.isNotEmpty) {
-        // Pick the first enrolled batch by default
         final batch = enrolledBatches.first;
         _selectedBatchId = batch.id;
 
-        // Calculate already paid amount for this batch
         final paidForBatch = allPayments
             .where((p) => p.studentId == studentId && p.batchId == batch.id)
             .fold<double>(0.0, (sum, p) => sum + p.amount);
@@ -81,7 +82,6 @@ class _PaymentsLedgerScreenState extends ConsumerState<PaymentsLedgerScreen> {
         final balanceDue =
             (batch.fee - paidForBatch).clamp(0.0, double.infinity);
 
-        // Auto-fill amount with remaining balance due or total batch fee
         if (balanceDue > 0) {
           _amountController.text = balanceDue == balanceDue.roundToDouble()
               ? balanceDue.toInt().toString()
@@ -152,7 +152,6 @@ class _PaymentsLedgerScreenState extends ConsumerState<PaymentsLedgerScreen> {
               final phoneMatch = s.phone.toLowerCase().contains(query);
               final cityMatch = s.areaCity.toLowerCase().contains(query);
 
-              // Also check enrolled batch name
               final enrolled = allBatches
                   .where((b) => b.studentIds.contains(s.id))
                   .map((b) => b.name.toLowerCase())
@@ -375,7 +374,11 @@ class _PaymentsLedgerScreenState extends ConsumerState<PaymentsLedgerScreen> {
         ref.watch(inquiriesStreamProvider).asData?.value ??
             ref.watch(localInquiriesProvider);
 
-    // Filter available students for selection: all joined students or inquiries enrolled in batches
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final isWide = screenWidth >= 720;
+    final isMobile = screenWidth < 640;
+
+    // Filter available students for selection: joined students or enrolled in batches
     final enrolledStudentIds =
         allBatches.expand((b) => b.studentIds).toSet();
     final availableStudents = allInquiries.where((inq) {
@@ -383,7 +386,7 @@ class _PaymentsLedgerScreenState extends ConsumerState<PaymentsLedgerScreen> {
           enrolledStudentIds.contains(inq.id);
     }).toList();
 
-    // Default select the first student if nothing selected yet
+    // Default select first student if not yet chosen
     if (_selectedStudentId == null && availableStudents.isNotEmpty) {
       _selectedStudentId = availableStudents.first.id;
       final enrolled = allBatches
@@ -401,7 +404,6 @@ class _PaymentsLedgerScreenState extends ConsumerState<PaymentsLedgerScreen> {
       }
     }
 
-    // Look up selected student and batch objects
     final selectedStudent = _selectedStudentId != null
         ? allInquiries.firstWhere(
             (s) => s.id == _selectedStudentId,
@@ -421,27 +423,29 @@ class _PaymentsLedgerScreenState extends ConsumerState<PaymentsLedgerScreen> {
       (b) => b.id == _selectedBatchId,
       orElse: () => studentEnrolledBatches.isNotEmpty
           ? studentEnrolledBatches.first
-          : (allBatches.isNotEmpty ? allBatches.first : Batch(
-              id: '',
-              name: 'No Batch Assigned',
-              startDate: DateTime.now(),
-              endDate: DateTime.now(),
-              timings: '',
-              studentIds: const [],
-              fee: 0.0,
-            )),
+          : (allBatches.isNotEmpty
+              ? allBatches.first
+              : Batch(
+                  id: '',
+                  name: 'No Batch Assigned',
+                  startDate: DateTime.now(),
+                  endDate: DateTime.now(),
+                  timings: '',
+                  studentIds: const [],
+                  fee: 0.0,
+                )),
     );
 
-    // Calculate current student's payment balance for selected batch
-    final currentStudentPaid = (_selectedStudentId != null && selectedBatch.id.isNotEmpty)
+    final currentStudentPaid = (_selectedStudentId != null &&
+            selectedBatch.id.isNotEmpty)
         ? allPayments
             .where((p) =>
                 p.studentId == _selectedStudentId &&
                 p.batchId == selectedBatch.id)
             .fold<double>(0.0, (sum, p) => sum + p.amount)
         : 0.0;
-    final currentStudentDue = (selectedBatch.fee - currentStudentPaid)
-        .clamp(0.0, double.infinity);
+    final currentStudentDue =
+        (selectedBatch.fee - currentStudentPaid).clamp(0.0, double.infinity);
 
     // Build the complete Student Payment Ledger list for all batch enrollments
     final List<StudentPaymentLedger> allLedgerItems = [];
@@ -512,7 +516,6 @@ class _PaymentsLedgerScreenState extends ConsumerState<PaymentsLedgerScreen> {
       return matchesStatus && matchesSearch;
     }).toList();
 
-    // Summary counts
     final dueCount =
         allLedgerItems.where((i) => i.status == PaymentStatus.due).length;
     final partialCount = allLedgerItems
@@ -521,20 +524,21 @@ class _PaymentsLedgerScreenState extends ConsumerState<PaymentsLedgerScreen> {
     final paidCount =
         allLedgerItems.where((i) => i.status == PaymentStatus.paid).length;
 
-    final isWide = MediaQuery.sizeOf(context).width >= 720;
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Payments & Fee Ledger'),
         centerTitle: false,
       ),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.symmetric(
+          horizontal: isWide ? 20 : 12,
+          vertical: 14,
+        ),
         children: [
-          // 1. RECORD PAYMENT CARD WITH AUTO-FILLED BATCH FEES & SEARCHABLE DROPDOWN
+          // 1. RECORD PAYMENT CARD
           Card(
             child: Padding(
-              padding: const EdgeInsets.all(20),
+              padding: EdgeInsets.all(isWide ? 20 : 14),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -549,31 +553,39 @@ class _PaymentsLedgerScreenState extends ConsumerState<PaymentsLedgerScreen> {
                         child: const Icon(
                           Icons.add_card_rounded,
                           color: Color(0xFF1E40AF),
-                          size: 22,
+                          size: 20,
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 10),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Record Student Payment',
-                              style: Theme.of(context).textTheme.titleLarge,
+                              'Record Payment',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleLarge
+                                  ?.copyWith(
+                                    fontSize: isMobile ? 17 : 20,
+                                    fontWeight: FontWeight.w800,
+                                  ),
                             ),
                             const Text(
-                              'Select a student: batch name, total fees & balance auto-fill instantly.',
+                              'Batch fee auto-fills when student is selected',
                               style: TextStyle(
-                                fontSize: 13,
+                                fontSize: 12,
                                 color: Color(0xFF64748B),
                               ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ],
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 18),
+                  const SizedBox(height: 14),
 
                   // Student Selector Row (Dropdown + Instant Search Button)
                   Row(
@@ -587,9 +599,11 @@ class _PaymentsLedgerScreenState extends ConsumerState<PaymentsLedgerScreen> {
                           isExpanded: true,
                           decoration: const InputDecoration(
                             labelText: 'Select Student *',
-                            prefixIcon: Icon(Icons.person_search_rounded),
-                            helperText:
-                                'Access any student via dropdown or search button',
+                            prefixIcon: Icon(Icons.person_search_rounded, size: 20),
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 12,
+                            ),
                           ),
                           items: availableStudents.map((s) {
                             final batches = allBatches
@@ -604,6 +618,7 @@ class _PaymentsLedgerScreenState extends ConsumerState<PaymentsLedgerScreen> {
                                 '${s.name}$batchInfo',
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(fontSize: 13.5),
                               ),
                             );
                           }).toList(),
@@ -619,32 +634,51 @@ class _PaymentsLedgerScreenState extends ConsumerState<PaymentsLedgerScreen> {
                           },
                         ),
                       ),
-                      const SizedBox(width: 10),
-                      OutlinedButton.icon(
-                        style: OutlinedButton.styleFrom(
-                          minimumSize: const Size(0, 52),
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                      const SizedBox(width: 8),
+                      // Responsive Search Button: Icon button on mobile to save space
+                      if (isMobile)
+                        IconButton.filledTonal(
+                          style: IconButton.styleFrom(
+                            minimumSize: const Size(48, 48),
+                            backgroundColor: const Color(0xFFEFF6FF),
+                            foregroundColor: const Color(0xFF1E40AF),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              side: const BorderSide(color: Color(0xFFBFDBFE)),
+                            ),
+                          ),
+                          tooltip: 'Search Student',
+                          onPressed: () => _openSearchableStudentPicker(
+                            context,
+                            availableStudents,
+                            allBatches,
+                            allPayments,
+                          ),
+                          icon: const Icon(Icons.search_rounded, size: 22),
+                        )
+                      else
+                        OutlinedButton.icon(
+                          style: OutlinedButton.styleFrom(
+                            minimumSize: const Size(0, 48),
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                          ),
+                          onPressed: () => _openSearchableStudentPicker(
+                            context,
+                            availableStudents,
+                            allBatches,
+                            allPayments,
+                          ),
+                          icon: const Icon(Icons.search_rounded, size: 18),
+                          label: const Text('Search'),
                         ),
-                        onPressed: () => _openSearchableStudentPicker(
-                          context,
-                          availableStudents,
-                          allBatches,
-                          allPayments,
-                        ),
-                        icon: const Icon(Icons.search_rounded, size: 20),
-                        label: const Text('Search'),
-                      ),
                     ],
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 12),
 
-                  // Auto-filled Enrolled Batch & Fee Info Banner
+                  // Auto-filled Enrolled Batch & 3-Column Fee Stat Boxes
                   if (selectedStudent != null) ...[
                     Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
+                      padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
                         color: const Color(0xFFF8FAFC),
                         borderRadius: BorderRadius.circular(12),
@@ -656,131 +690,109 @@ class _PaymentsLedgerScreenState extends ConsumerState<PaymentsLedgerScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          // Batch Name header with Switcher
                           Row(
                             children: [
                               const Icon(
                                 Icons.school_rounded,
-                                size: 18,
+                                size: 16,
                                 color: Color(0xFF1E40AF),
                               ),
-                              const SizedBox(width: 8),
+                              const SizedBox(width: 6),
                               Expanded(
                                 child: Text(
                                   studentEnrolledBatches.isNotEmpty
-                                      ? 'Enrolled in: ${selectedBatch.name}'
-                                      : 'No Active Batch Assigned Yet',
+                                      ? 'Enrolled: ${selectedBatch.name}'
+                                      : 'No Active Batch Assigned',
                                   style: const TextStyle(
-                                    fontSize: 14,
+                                    fontSize: 13,
                                     fontWeight: FontWeight.w700,
                                     color: Color(0xFF0F172A),
                                   ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                               if (studentEnrolledBatches.length > 1) ...[
-                                DropdownButton<String>(
-                                  value: _selectedBatchId,
-                                  isDense: true,
-                                  underline: const SizedBox(),
-                                  items: studentEnrolledBatches.map((b) {
-                                    return DropdownMenuItem<String>(
-                                      value: b.id,
-                                      child: Text(
-                                        'Switch: ${b.name}',
-                                        style: const TextStyle(fontSize: 12),
-                                      ),
-                                    );
-                                  }).toList(),
-                                  onChanged: (newBatchId) {
-                                    if (newBatchId != null) {
-                                      _onBatchChanged(
-                                        newBatchId,
-                                        allBatches,
-                                        allPayments,
+                                const SizedBox(width: 4),
+                                DropdownButtonHideUnderline(
+                                  child: DropdownButton<String>(
+                                    value: _selectedBatchId,
+                                    isDense: true,
+                                    icon: const Icon(
+                                      Icons.swap_horiz_rounded,
+                                      size: 16,
+                                      color: Color(0xFF1E40AF),
+                                    ),
+                                    items: studentEnrolledBatches.map((b) {
+                                      return DropdownMenuItem<String>(
+                                        value: b.id,
+                                        child: Text(
+                                          b.name,
+                                          style: const TextStyle(fontSize: 12),
+                                        ),
                                       );
-                                    }
-                                  },
+                                    }).toList(),
+                                    onChanged: (newBatchId) {
+                                      if (newBatchId != null) {
+                                        _onBatchChanged(
+                                          newBatchId,
+                                          allBatches,
+                                          allPayments,
+                                        );
+                                      }
+                                    },
+                                  ),
                                 ),
                               ],
                             ],
                           ),
-                          const SizedBox(height: 8),
-                          Wrap(
-                            spacing: 16,
-                            runSpacing: 6,
+                          const SizedBox(height: 10),
+
+                          // 3 Balanced Stat Boxes (Never overflows on mobile)
+                          Row(
                             children: [
-                              Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Text(
-                                    'Batch Fees: ',
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      color: Color(0xFF64748B),
-                                    ),
-                                  ),
-                                  Text(
-                                    '₹${selectedBatch.fee.toStringAsFixed(0)}',
-                                    style: const TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w700,
-                                      color: Color(0xFF0F172A),
-                                    ),
-                                  ),
-                                ],
+                              Expanded(
+                                child: _FeeStatBox(
+                                  label: 'Batch Fees',
+                                  amount: '₹${selectedBatch.fee.toStringAsFixed(0)}',
+                                  color: const Color(0xFF0F172A),
+                                  bgColor: Colors.white,
+                                ),
                               ),
-                              Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Text(
-                                    'Paid So Far: ',
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      color: Color(0xFF64748B),
-                                    ),
-                                  ),
-                                  Text(
-                                    '₹${currentStudentPaid.toStringAsFixed(0)}',
-                                    style: const TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w700,
-                                      color: Color(0xFF15803D),
-                                    ),
-                                  ),
-                                ],
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: _FeeStatBox(
+                                  label: 'Paid So Far',
+                                  amount: '₹${currentStudentPaid.toStringAsFixed(0)}',
+                                  color: const Color(0xFF15803D),
+                                  bgColor: const Color(0xFFF0FDF4),
+                                ),
                               ),
-                              Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Text(
-                                    'Remaining Due: ',
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      color: Color(0xFF64748B),
-                                    ),
-                                  ),
-                                  Text(
-                                    '₹${currentStudentDue.toStringAsFixed(0)}',
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w700,
-                                      color: currentStudentDue > 0
-                                          ? const Color(0xFFDC2626)
-                                          : const Color(0xFF15803D),
-                                    ),
-                                  ),
-                                ],
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: _FeeStatBox(
+                                  label: 'Balance Due',
+                                  amount: '₹${currentStudentDue.toStringAsFixed(0)}',
+                                  color: currentStudentDue > 0
+                                      ? const Color(0xFFDC2626)
+                                      : const Color(0xFF15803D),
+                                  bgColor: currentStudentDue > 0
+                                      ? const Color(0xFFFEF2F2)
+                                      : const Color(0xFFF0FDF4),
+                                ),
                               ),
                             ],
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
                   ],
 
-                  // Payment Amount, Method, Date & Action
-                  if (!isWide) ...[
-                    // Mobile vertical form
+                  // Payment Form Inputs
+                  if (isMobile) ...[
+                    // MOBILE VERTICAL FLOW
                     TextField(
                       controller: _amountController,
                       keyboardType: const TextInputType.numberWithOptions(
@@ -788,28 +800,41 @@ class _PaymentsLedgerScreenState extends ConsumerState<PaymentsLedgerScreen> {
                       ),
                       decoration: InputDecoration(
                         labelText: 'Payment Amount (₹) *',
-                        hintText: 'Auto-filled with balance due',
-                        prefixIcon: const Icon(Icons.currency_rupee, size: 20),
+                        prefixIcon: const Icon(Icons.currency_rupee, size: 18),
+                        isDense: true,
                         suffixIcon: currentStudentDue > 0
                             ? TextButton(
                                 onPressed: () {
                                   _amountController.text =
                                       currentStudentDue.toStringAsFixed(0);
                                 },
-                                child: const Text('Full Due'),
+                                child: const Text(
+                                  'Full Due',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 12,
+                                  ),
+                                ),
                               )
                             : null,
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 10),
                     Row(
                       children: [
+                        // Payment Method dropdown
                         Expanded(
+                          flex: 5,
                           child: DropdownButtonFormField<String>(
                             initialValue: _selectedMethod,
                             isDense: true,
                             decoration: const InputDecoration(
-                              labelText: 'Payment Method',
+                              labelText: 'Method',
+                              isDense: true,
+                              contentPadding: EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 12,
+                              ),
                             ),
                             items: const [
                               DropdownMenuItem(value: 'UPI', child: Text('UPI')),
@@ -829,12 +854,11 @@ class _PaymentsLedgerScreenState extends ConsumerState<PaymentsLedgerScreen> {
                           ),
                         ),
                         const SizedBox(width: 10),
+                        // Date picker button styled cleanly
                         Expanded(
-                          child: OutlinedButton.icon(
-                            style: OutlinedButton.styleFrom(
-                              minimumSize: const Size(0, 50),
-                            ),
-                            onPressed: () async {
+                          flex: 5,
+                          child: InkWell(
+                            onTap: () async {
                               final picked = await showDatePicker(
                                 context: context,
                                 initialDate: _selectedDate,
@@ -845,33 +869,64 @@ class _PaymentsLedgerScreenState extends ConsumerState<PaymentsLedgerScreen> {
                                 setState(() => _selectedDate = picked);
                               }
                             },
-                            icon: const Icon(Icons.calendar_today_outlined,
-                                size: 16),
-                            label: Text(_formatDate(_selectedDate)),
+                            borderRadius: BorderRadius.circular(10),
+                            child: InputDecorator(
+                              decoration: const InputDecoration(
+                                labelText: 'Date',
+                                isDense: true,
+                                contentPadding: EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 10,
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(
+                                    Icons.calendar_today_outlined,
+                                    size: 14,
+                                    color: Color(0xFF1E40AF),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      _formatDate(_selectedDate),
+                                      style: const TextStyle(
+                                        fontSize: 12.5,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 10),
                     TextField(
                       controller: _notesController,
                       decoration: const InputDecoration(
-                        labelText: 'Remarks / Transaction Reference (Optional)',
-                        hintText: 'E.g. Installment 1 of 2 or UPI Ref 410293',
+                        labelText: 'Remarks / Transaction Reference',
+                        hintText: 'E.g. Installment 1 of 2 or UPI Ref',
+                        isDense: true,
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 14),
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(
                         style: ElevatedButton.styleFrom(
-                          minimumSize: const Size(0, 50),
+                          minimumSize: const Size(0, 48),
                         ),
                         onPressed: () => _recordPayment(
                           allInquiries,
                           allBatches,
                         ),
-                        icon: const Icon(Icons.check_circle_outline_rounded),
+                        icon: const Icon(Icons.check_circle_outline_rounded,
+                            size: 18),
                         label: const Text(
                           'Save Payment Record',
                           style: TextStyle(fontWeight: FontWeight.w700),
@@ -879,7 +934,7 @@ class _PaymentsLedgerScreenState extends ConsumerState<PaymentsLedgerScreen> {
                       ),
                     ),
                   ] else ...[
-                    // Tablet & Web horizontal row
+                    // TABLET & WEB HORIZONTAL FLOW
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -986,34 +1041,43 @@ class _PaymentsLedgerScreenState extends ConsumerState<PaymentsLedgerScreen> {
               ),
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
 
-          // 2. STUDENT NAME, FEES, BATCH & PAYMENT DUE / PAID / PARTIALLY PAID LEDGER
+          // 2. STUDENT NAME, FEES, BATCH & PAYMENT STATUS LEDGER
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
                 'Student Fee Ledger',
-                style: Theme.of(context).textTheme.headlineMedium,
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      fontSize: isMobile ? 18 : 22,
+                    ),
               ),
-              Text(
-                '${filteredLedger.length} Record(s)',
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF64748B),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEFF6FF),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  '${filteredLedger.length} Record(s)',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF1E40AF),
+                  ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
 
-          // Search Bar & Status Filter Chips
+          // Search Bar
           TextField(
             controller: _searchController,
             decoration: InputDecoration(
               isDense: true,
-              hintText: 'Search by student name, batch, city or phone...',
+              hintText: 'Search student, batch, city or phone...',
               prefixIcon: const Icon(Icons.search_rounded, size: 20),
               suffixIcon: _searchQuery.isNotEmpty
                   ? IconButton(
@@ -1029,7 +1093,7 @@ class _PaymentsLedgerScreenState extends ConsumerState<PaymentsLedgerScreen> {
           ),
           const SizedBox(height: 10),
 
-          // Filter Chips: All, Due, Partially Paid, Paid
+          // Filter Chips: All, Due, Partially Paid, Paid (Scrollable on mobile)
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
@@ -1041,14 +1105,14 @@ class _PaymentsLedgerScreenState extends ConsumerState<PaymentsLedgerScreen> {
                     if (selected) setState(() => _statusFilter = null);
                   },
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 6),
                 FilterChip(
                   avatar: const Icon(
                     Icons.warning_amber_rounded,
-                    size: 16,
+                    size: 15,
                     color: Color(0xFFDC2626),
                   ),
-                  label: Text('Payment Due ($dueCount)'),
+                  label: Text('Due ($dueCount)'),
                   selected: _statusFilter == PaymentStatus.due,
                   selectedColor: const Color(0xFFFEE2E2),
                   onSelected: (selected) {
@@ -1058,14 +1122,14 @@ class _PaymentsLedgerScreenState extends ConsumerState<PaymentsLedgerScreen> {
                     );
                   },
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 6),
                 FilterChip(
                   avatar: const Icon(
                     Icons.timelapse_rounded,
-                    size: 16,
+                    size: 15,
                     color: Color(0xFFB45309),
                   ),
-                  label: Text('Partially Paid ($partialCount)'),
+                  label: Text('Partial ($partialCount)'),
                   selected: _statusFilter == PaymentStatus.partiallyPaid,
                   selectedColor: const Color(0xFFFEF3C7),
                   onSelected: (selected) {
@@ -1075,14 +1139,14 @@ class _PaymentsLedgerScreenState extends ConsumerState<PaymentsLedgerScreen> {
                     );
                   },
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 6),
                 FilterChip(
                   avatar: const Icon(
                     Icons.check_circle_rounded,
-                    size: 16,
+                    size: 15,
                     color: Color(0xFF15803D),
                   ),
-                  label: Text('Paid in Full ($paidCount)'),
+                  label: Text('Paid ($paidCount)'),
                   selected: _statusFilter == PaymentStatus.paid,
                   selectedColor: const Color(0xFFDCFCE7),
                   onSelected: (selected) {
@@ -1095,28 +1159,28 @@ class _PaymentsLedgerScreenState extends ConsumerState<PaymentsLedgerScreen> {
               ],
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 12),
 
           // Ledger Items List
           if (filteredLedger.isEmpty)
             Card(
               child: Padding(
-                padding: const EdgeInsets.all(32),
+                padding: const EdgeInsets.all(28),
                 child: Center(
                   child: Column(
                     children: [
                       const Icon(
                         Icons.payments_outlined,
-                        size: 48,
+                        size: 44,
                         color: Color(0xFF94A3B8),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 10),
                       Text(
                         _searchQuery.isNotEmpty
                             ? 'No students match "$_searchQuery".'
                             : 'No payment records match the selected filter.',
                         style: const TextStyle(
-                          fontSize: 15,
+                          fontSize: 14,
                           color: Color(0xFF64748B),
                         ),
                       ),
@@ -1130,27 +1194,26 @@ class _PaymentsLedgerScreenState extends ConsumerState<PaymentsLedgerScreen> {
               final status = item.status;
               return Card(
                 child: Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: EdgeInsets.all(isMobile ? 12 : 16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // Header Row: Avatar, Student Name, City/Phone & Status Badge
                       Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           CircleAvatar(
                             backgroundColor: status.backgroundColor,
                             foregroundColor: status.foregroundColor,
-                            radius: 20,
+                            radius: isMobile ? 17 : 20,
                             child: Text(
                               _getInitials(item.studentName),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontWeight: FontWeight.w800,
-                                fontSize: 13,
+                                fontSize: isMobile ? 12 : 13,
                               ),
                             ),
                           ),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: 10),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1161,137 +1224,105 @@ class _PaymentsLedgerScreenState extends ConsumerState<PaymentsLedgerScreen> {
                                       .textTheme
                                       .titleMedium
                                       ?.copyWith(
+                                        fontSize: isMobile ? 14.5 : 16,
                                         fontWeight: FontWeight.w800,
                                       ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
                                   '${item.studentCity} • ${item.studentPhone}',
                                   style: const TextStyle(
-                                    fontSize: 12,
+                                    fontSize: 11.5,
                                     color: Color(0xFF64748B),
                                   ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ],
                             ),
                           ),
-                          // Payment Due / Paid / Partially Paid Badge
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 5,
-                            ),
-                            decoration: BoxDecoration(
-                              color: status.backgroundColor,
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                color: status.borderColor,
-                                width: 1.2,
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  status.icon,
-                                  size: 15,
-                                  color: status.foregroundColor,
-                                ),
-                                const SizedBox(width: 5),
-                                Text(
-                                  status.label,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w800,
-                                    color: status.foregroundColor,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
+                          const SizedBox(width: 8),
+                          // Compact Status Badge on Mobile
+                          _StatusBadge(status: status, isMobile: isMobile),
                         ],
                       ),
-                      const SizedBox(height: 14),
+                      const SizedBox(height: 10),
 
-                      // Batch Details & Financial Numbers
+                      // Enrolled Batch & Timings Row
                       Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF8FAFC),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: const Color(0xFFE2E8F0)),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
                         ),
-                        child: Wrap(
-                          spacing: 16,
-                          runSpacing: 8,
-                          alignment: WrapAlignment.spaceBetween,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF1F5F9),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
                           children: [
-                            // Enrolled Batch & Timings
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(
-                                  Icons.class_rounded,
-                                  size: 16,
-                                  color: Color(0xFF7E22CE),
-                                ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  'Batch: ${item.batchName} (${item.batchTimings})',
-                                  style: const TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w700,
-                                    color: Color(0xFF1E293B),
-                                  ),
-                                ),
-                              ],
+                            const Icon(
+                              Icons.class_rounded,
+                              size: 14,
+                              color: Color(0xFF7E22CE),
                             ),
-                            // Total Fee, Paid, Balance
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  'Fees: ₹${item.totalFee.toStringAsFixed(0)}',
-                                  style: const TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w700,
-                                    color: Color(0xFF0F172A),
-                                  ),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                '${item.batchName} (${item.batchTimings})',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF1E293B),
                                 ),
-                                const Text(
-                                  '  •  ',
-                                  style: TextStyle(color: Color(0xFF94A3B8)),
-                                ),
-                                Text(
-                                  'Paid: ₹${item.paidAmount.toStringAsFixed(0)}',
-                                  style: const TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w700,
-                                    color: Color(0xFF15803D),
-                                  ),
-                                ),
-                                const Text(
-                                  '  •  ',
-                                  style: TextStyle(color: Color(0xFF94A3B8)),
-                                ),
-                                Text(
-                                  'Due: ₹${item.balanceDue.toStringAsFixed(0)}',
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w700,
-                                    color: item.balanceDue > 0
-                                        ? const Color(0xFFDC2626)
-                                        : const Color(0xFF15803D),
-                                  ),
-                                ),
-                              ],
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
                           ],
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 10),
 
-                      // Progress Bar comparing Paid vs Total Fees
+                      // 3-Column Balanced Financial Stat Boxes
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _FeeStatBox(
+                              label: 'Total Fee',
+                              amount: '₹${item.totalFee.toStringAsFixed(0)}',
+                              color: const Color(0xFF0F172A),
+                              bgColor: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: _FeeStatBox(
+                              label: 'Paid',
+                              amount: '₹${item.paidAmount.toStringAsFixed(0)}',
+                              color: const Color(0xFF15803D),
+                              bgColor: const Color(0xFFF0FDF4),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: _FeeStatBox(
+                              label: 'Balance Due',
+                              amount: '₹${item.balanceDue.toStringAsFixed(0)}',
+                              color: item.balanceDue > 0
+                                  ? const Color(0xFFDC2626)
+                                  : const Color(0xFF15803D),
+                              bgColor: item.balanceDue > 0
+                                  ? const Color(0xFFFEF2F2)
+                                  : const Color(0xFFF0FDF4),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+
+                      // Progress Bar
                       Row(
                         children: [
                           Expanded(
@@ -1299,7 +1330,7 @@ class _PaymentsLedgerScreenState extends ConsumerState<PaymentsLedgerScreen> {
                               borderRadius: BorderRadius.circular(6),
                               child: LinearProgressIndicator(
                                 value: item.progress,
-                                minHeight: 9,
+                                minHeight: 8,
                                 backgroundColor: const Color(0xFFE2E8F0),
                                 color: status == PaymentStatus.paid
                                     ? const Color(0xFF15803D)
@@ -1309,34 +1340,48 @@ class _PaymentsLedgerScreenState extends ConsumerState<PaymentsLedgerScreen> {
                               ),
                             ),
                           ),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: 10),
                           Text(
                             '${(item.progress * 100).toInt()}%',
                             style: TextStyle(
-                              fontSize: 12,
+                              fontSize: 11.5,
                               fontWeight: FontWeight.w800,
                               color: status.foregroundColor,
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 8),
 
-                      // Action Row: Quick Record Payment & Last Payment Note
+                      // Action Row: Last payment note & Quick Record Payment Button
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            item.lastPaymentDate != null
-                                ? 'Last payment: ${_formatDate(item.lastPaymentDate!)}'
-                                : 'No payments recorded yet',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: Color(0xFF64748B),
+                          Expanded(
+                            child: Text(
+                              item.lastPaymentDate != null
+                                  ? 'Last paid: ${_formatShortDate(item.lastPaymentDate!)}'
+                                  : 'No payments yet',
+                              style: const TextStyle(
+                                fontSize: 11.5,
+                                color: Color(0xFF64748B),
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                          if (item.balanceDue > 0)
-                            TextButton.icon(
+                          if (item.balanceDue > 0) ...[
+                            const SizedBox(width: 8),
+                            ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF1E40AF),
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 6,
+                                ),
+                                minimumSize: const Size(0, 32),
+                                elevation: 0,
+                              ),
                               onPressed: () {
                                 _onStudentSelected(
                                   item.studentId,
@@ -1344,7 +1389,6 @@ class _PaymentsLedgerScreenState extends ConsumerState<PaymentsLedgerScreen> {
                                   allBatches,
                                   allPayments,
                                 );
-                                // Ensure the correct batch is selected
                                 _onBatchChanged(
                                   item.batchId,
                                   allBatches,
@@ -1353,7 +1397,7 @@ class _PaymentsLedgerScreenState extends ConsumerState<PaymentsLedgerScreen> {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                     content: Text(
-                                      'Loaded ${item.studentName} (${item.batchName}) with due balance ₹${item.balanceDue.toStringAsFixed(0)}.',
+                                      'Loaded ${item.studentName} with due balance ₹${item.balanceDue.toStringAsFixed(0)}.',
                                     ),
                                     behavior: SnackBarBehavior.floating,
                                     duration: const Duration(seconds: 2),
@@ -1361,16 +1405,18 @@ class _PaymentsLedgerScreenState extends ConsumerState<PaymentsLedgerScreen> {
                                 );
                               },
                               icon: const Icon(
-                                Icons.payments_rounded,
-                                size: 16,
+                                Icons.payment_rounded,
+                                size: 14,
                               ),
                               label: Text(
-                                'Pay Due (₹${item.balanceDue.toStringAsFixed(0)})',
+                                'Pay Due ₹${item.balanceDue.toStringAsFixed(0)}',
                                 style: const TextStyle(
+                                  fontSize: 11.5,
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),
                             ),
+                          ],
                         ],
                       ),
                     ],
@@ -1378,6 +1424,115 @@ class _PaymentsLedgerScreenState extends ConsumerState<PaymentsLedgerScreen> {
                 ),
               );
             }),
+        ],
+      ),
+    );
+  }
+}
+
+class _FeeStatBox extends StatelessWidget {
+  final String label;
+  final String amount;
+  final Color color;
+  final Color bgColor;
+
+  const _FeeStatBox({
+    required this.label,
+    required this.amount,
+    required this.color,
+    required this.bgColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: color.withValues(alpha: 0.2),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 10.5,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF64748B),
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 2),
+          Text(
+            amount,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w800,
+              color: color,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatusBadge extends StatelessWidget {
+  final PaymentStatus status;
+  final bool isMobile;
+
+  const _StatusBadge({
+    required this.status,
+    required this.isMobile,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final label = isMobile
+        ? (status == PaymentStatus.partiallyPaid
+            ? 'Partial'
+            : (status == PaymentStatus.paid ? 'Paid' : 'Due'))
+        : status.label;
+
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: isMobile ? 8 : 10,
+        vertical: isMobile ? 4 : 5,
+      ),
+      decoration: BoxDecoration(
+        color: status.backgroundColor,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: status.borderColor,
+          width: 1.2,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            status.icon,
+            size: isMobile ? 13 : 15,
+            color: status.foregroundColor,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: isMobile ? 11 : 12,
+              fontWeight: FontWeight.w800,
+              color: status.foregroundColor,
+            ),
+          ),
         ],
       ),
     );
