@@ -31,10 +31,11 @@ class BatchListView extends ConsumerWidget {
           Padding(
             padding: const EdgeInsets.only(right: 16),
             child: ElevatedButton.icon(
-              onPressed: () => _showCreateBatchDialog(
+              onPressed: () => _showBatchFormDialog(
                 context,
                 ref,
                 joinedStudents,
+                allInquiries: allInquiries,
               ),
               icon: const Icon(Icons.add_box_rounded),
               label: const Text('Create Batch'),
@@ -72,10 +73,11 @@ class BatchListView extends ConsumerWidget {
                   ),
                 ),
                 TextButton.icon(
-                  onPressed: () => _showCreateBatchDialog(
+                  onPressed: () => _showBatchFormDialog(
                     context,
                     ref,
                     joinedStudents,
+                    allInquiries: allInquiries,
                   ),
                   icon: const Icon(Icons.group_add_rounded),
                   label: const Text('New Batch'),
@@ -130,6 +132,14 @@ class BatchListView extends ConsumerWidget {
                               runSpacing: 8,
                               children: [
                                 _InfoBadge(
+                                  icon: Icons.currency_rupee_rounded,
+                                  text: batch.fee > 0
+                                      ? 'Fees: ₹${batch.fee.toStringAsFixed(0)}'
+                                      : 'Fees: ₹0',
+                                  bgColor: const Color(0xFFECFDF5),
+                                  fgColor: const Color(0xFF047857),
+                                ),
+                                _InfoBadge(
                                   icon: Icons.repeat_rounded,
                                   text: batch.scheduleDescription,
                                   bgColor: const Color(0xFFFEF3C7),
@@ -164,6 +174,21 @@ class BatchListView extends ConsumerWidget {
                           runSpacing: 8,
                           children: [
                             OutlinedButton.icon(
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: const Color(0xFF1E40AF),
+                                side: const BorderSide(color: Color(0xFF93C5FD)),
+                              ),
+                              onPressed: () => _showBatchFormDialog(
+                                context,
+                                ref,
+                                joinedStudents,
+                                existingBatch: batch,
+                                allInquiries: allInquiries,
+                              ),
+                              icon: const Icon(Icons.edit_note_rounded, size: 20),
+                              label: const Text('Edit Batch'),
+                            ),
+                            OutlinedButton.icon(
                               onPressed: () => _showManageStudentsDialog(
                                 context,
                                 ref,
@@ -171,7 +196,7 @@ class BatchListView extends ConsumerWidget {
                                 joinedStudents,
                               ),
                               icon: const Icon(Icons.person_add_alt_1_outlined),
-                              label: const Text('Select Joined Students'),
+                              label: const Text('Students'),
                             ),
                             OutlinedButton.icon(
                               style: OutlinedButton.styleFrom(
@@ -313,21 +338,51 @@ class BatchListView extends ConsumerWidget {
     );
   }
 
-  Future<void> _showCreateBatchDialog(
+  Future<void> _showBatchFormDialog(
     BuildContext context,
     WidgetRef ref,
-    List<Inquiry> joinedStudents,
-  ) async {
-    final nameCtrl = TextEditingController();
-    DateTime startDate = DateTime.now();
-    DateTime endDate = DateTime.now().add(const Duration(days: 90));
+    List<Inquiry> joinedStudents, {
+    Batch? existingBatch,
+    List<Inquiry>? allInquiries,
+  }) async {
+    final isEditing = existingBatch != null;
+    final nameCtrl = TextEditingController(text: existingBatch?.name ?? '');
+    final feeCtrl = TextEditingController(
+      text: existingBatch != null && existingBatch.fee > 0
+          ? (existingBatch.fee == existingBatch.fee.roundToDouble()
+              ? existingBatch.fee.toInt().toString()
+              : existingBatch.fee.toString())
+          : '',
+    );
+    DateTime startDate = existingBatch?.startDate ?? DateTime.now();
+    DateTime endDate = existingBatch?.endDate ??
+        DateTime.now().add(const Duration(days: 90));
     TimeOfDay startTime = const TimeOfDay(hour: 10, minute: 0);
     TimeOfDay endTime = const TimeOfDay(hour: 11, minute: 30);
-    final timingsCtrl = TextEditingController(text: '10:00 AM - 11:30 AM');
-    final selectedStudentIds = <String>{};
+    final timingsCtrl = TextEditingController(
+      text: existingBatch?.timings ?? '10:00 AM - 11:30 AM',
+    );
+    final selectedStudentIds =
+        Set<String>.from(existingBatch?.studentIds ?? const []);
 
-    // Days selection: default to Daily [1,2,3,4,5,6,7]
-    final selectedDays = <int>{1, 2, 3, 4, 5, 6, 7};
+    // Days selection: default to Daily [1,2,3,4,5,6,7] or existing batch days
+    final selectedDays = Set<int>.from(
+      existingBatch?.activeScheduleDays ?? const [1, 2, 3, 4, 5, 6, 7],
+    );
+
+    // Build selectable students list (joined students + already enrolled students)
+    final studentMap = <String, Inquiry>{};
+    for (final s in joinedStudents) {
+      studentMap[s.id] = s;
+    }
+    if (existingBatch != null && allInquiries != null) {
+      for (final s in allInquiries) {
+        if (existingBatch.studentIds.contains(s.id)) {
+          studentMap[s.id] = s;
+        }
+      }
+    }
+    final selectableStudents = studentMap.values.toList();
 
     String formatTimeOfDay(BuildContext ctx, TimeOfDay tod) {
       final localizations = MaterialLocalizations.of(ctx);
@@ -347,11 +402,14 @@ class BatchListView extends ConsumerWidget {
               endDate: endDate,
               timings: '',
               studentIds: const [],
+              fee: 0,
               scheduleDays: selectedDays.toList(),
             );
 
             return AlertDialog(
-              title: const Text('Create New Batch'),
+              title: Text(isEditing
+                  ? 'Edit Batch • ${existingBatch.name}'
+                  : 'Create New Batch'),
               content: SizedBox(
                 width: 560,
                 child: SingleChildScrollView(
@@ -364,13 +422,30 @@ class BatchListView extends ConsumerWidget {
                         controller: nameCtrl,
                         decoration: const InputDecoration(
                           labelText: 'Batch Name *',
-                          hintText: 'E.g. Sunday Masterclass or Weekday Fast-Track',
+                          hintText:
+                              'E.g. Sunday Masterclass or Weekday Fast-Track',
                           prefixIcon: Icon(Icons.class_outlined),
                         ),
                       ),
                       const SizedBox(height: 16),
 
-                      // 2. Class Schedule / Recurring Days (Everyday, Sunday, Weekdays, etc.)
+                      // 2. Batch Fees (₹)
+                      TextField(
+                        controller: feeCtrl,
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        decoration: const InputDecoration(
+                          labelText: 'Batch Fees (₹) *',
+                          hintText: 'E.g. 15000',
+                          prefixIcon: Icon(Icons.currency_rupee_rounded),
+                          helperText:
+                              'Standard course fee charged per student for this batch',
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // 3. Class Schedule / Recurring Days (Everyday, Sunday, Weekdays, etc.)
                       Text(
                         'Class Schedule (Recurring Days)',
                         style: Theme.of(ctx).textTheme.titleMedium,
@@ -419,8 +494,8 @@ class BatchListView extends ConsumerWidget {
                             const SizedBox(width: 6),
                             _SchedulePresetChip(
                               label: 'Every Sunday',
-                              isSelected:
-                                  selectedDays.length == 1 && selectedDays.contains(7),
+                              isSelected: selectedDays.length == 1 &&
+                                  selectedDays.contains(7),
                               onTap: () {
                                 setDialogState(() {
                                   selectedDays.clear();
@@ -431,8 +506,8 @@ class BatchListView extends ConsumerWidget {
                             const SizedBox(width: 6),
                             _SchedulePresetChip(
                               label: 'Every Saturday',
-                              isSelected:
-                                  selectedDays.length == 1 && selectedDays.contains(6),
+                              isSelected: selectedDays.length == 1 &&
+                                  selectedDays.contains(6),
                               onTap: () {
                                 setDialogState(() {
                                   selectedDays.clear();
@@ -538,7 +613,7 @@ class BatchListView extends ConsumerWidget {
                       ),
                       const SizedBox(height: 16),
 
-                      // 3. Date From & Date To
+                      // 4. Date From & Date To
                       Text(
                         'Batch Duration (Date From – Date To)',
                         style: Theme.of(ctx).textTheme.titleMedium,
@@ -598,7 +673,7 @@ class BatchListView extends ConsumerWidget {
                       ),
                       const SizedBox(height: 16),
 
-                      // 4. Batch Timings
+                      // 5. Batch Timings
                       Text(
                         'Class Timings',
                         style: Theme.of(ctx).textTheme.titleMedium,
@@ -669,39 +744,39 @@ class BatchListView extends ConsumerWidget {
                       ),
                       const SizedBox(height: 20),
 
-                      // 5. Select Students with Status == Joined
+                      // 6. Select Students with Status == Joined
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            'Select Students (Status: Joined)',
+                            'Assign Students (Status: Joined)',
                             style: Theme.of(ctx).textTheme.titleMedium,
                           ),
-                          if (joinedStudents.isNotEmpty)
+                          if (selectableStudents.isNotEmpty)
                             TextButton(
                               onPressed: () {
                                 setDialogState(() {
                                   if (selectedStudentIds.length ==
-                                      joinedStudents.length) {
+                                      selectableStudents.length) {
                                     selectedStudentIds.clear();
                                   } else {
                                     selectedStudentIds.addAll(
-                                      joinedStudents.map((s) => s.id),
+                                      selectableStudents.map((s) => s.id),
                                     );
                                   }
                                 });
                               },
                               child: Text(
                                 selectedStudentIds.length ==
-                                        joinedStudents.length
+                                        selectableStudents.length
                                     ? 'Clear All'
-                                    : 'Select All (${joinedStudents.length})',
+                                    : 'Select All (${selectableStudents.length})',
                               ),
                             ),
                         ],
                       ),
                       const SizedBox(height: 6),
-                      if (joinedStudents.isEmpty)
+                      if (selectableStudents.isEmpty)
                         Container(
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
@@ -722,11 +797,11 @@ class BatchListView extends ConsumerWidget {
                           ),
                           child: ListView.separated(
                             shrinkWrap: true,
-                            itemCount: joinedStudents.length,
+                            itemCount: selectableStudents.length,
                             separatorBuilder: (_, __) =>
                                 const Divider(height: 1),
                             itemBuilder: (context, index) {
-                              final student = joinedStudents[index];
+                              final student = selectableStudents[index];
                               final isSelected =
                                   selectedStudentIds.contains(student.id);
                               return CheckboxListTile(
@@ -792,35 +867,70 @@ class BatchListView extends ConsumerWidget {
                       );
                       return;
                     }
+                    final feeValue = double.tryParse(
+                            feeCtrl.text.trim().replaceAll(',', '')) ??
+                        0.0;
                     final sortedDays = selectedDays.toList()..sort();
-                    await ref.read(batchRepositoryProvider).createBatch(
-                          Batch(
-                            id: '',
-                            name: batchName,
-                            startDate: startDate,
-                            endDate: endDate,
-                            timings: timingsCtrl.text.trim().isEmpty
-                                ? '10:00 AM - 11:30 AM'
-                                : timingsCtrl.text.trim(),
-                            studentIds: selectedStudentIds.toList(),
-                            scheduleDays: sortedDays,
+                    final timingsText = timingsCtrl.text.trim().isEmpty
+                        ? '10:00 AM - 11:30 AM'
+                        : timingsCtrl.text.trim();
+
+                    if (isEditing) {
+                      final updated = existingBatch.copyWith(
+                        name: batchName,
+                        fee: feeValue,
+                        startDate: startDate,
+                        endDate: endDate,
+                        timings: timingsText,
+                        studentIds: selectedStudentIds.toList(),
+                        scheduleDays: sortedDays,
+                      );
+                      await ref
+                          .read(batchRepositoryProvider)
+                          .updateBatch(updated);
+                      if (dialogContext.mounted) {
+                        Navigator.of(dialogContext).pop();
+                      }
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              'Updated "$batchName" (Fees: ₹${feeValue.toStringAsFixed(0)}).',
+                            ),
+                            behavior: SnackBarBehavior.floating,
                           ),
                         );
-                    if (dialogContext.mounted) {
-                      Navigator.of(dialogContext).pop();
-                    }
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            'Created "$batchName" (${dummyBatch.scheduleDescription}) with ${selectedStudentIds.length} joined student(s).',
+                      }
+                    } else {
+                      await ref.read(batchRepositoryProvider).createBatch(
+                            Batch(
+                              id: '',
+                              name: batchName,
+                              fee: feeValue,
+                              startDate: startDate,
+                              endDate: endDate,
+                              timings: timingsText,
+                              studentIds: selectedStudentIds.toList(),
+                              scheduleDays: sortedDays,
+                            ),
+                          );
+                      if (dialogContext.mounted) {
+                        Navigator.of(dialogContext).pop();
+                      }
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              'Created "$batchName" (Fees: ₹${feeValue.toStringAsFixed(0)}, ${dummyBatch.scheduleDescription}) with ${selectedStudentIds.length} joined student(s).',
+                            ),
+                            behavior: SnackBarBehavior.floating,
                           ),
-                        ),
-                      );
+                        );
+                      }
                     }
                   },
                   icon: const Icon(Icons.check_circle_outline),
-                  label: const Text('Save Batch'),
+                  label: Text(isEditing ? 'Update Batch' : 'Save Batch'),
                 ),
               ],
             );

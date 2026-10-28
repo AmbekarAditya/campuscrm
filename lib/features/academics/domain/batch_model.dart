@@ -7,6 +7,7 @@ class Batch {
   final DateTime endDate;
   final String timings;
   final List<String> studentIds;
+  final double fee;
 
   /// Days of the week when this batch runs.
   /// 1 = Monday, 2 = Tuesday, 3 = Wednesday, 4 = Thursday, 5 = Friday, 6 = Saturday, 7 = Sunday.
@@ -20,6 +21,7 @@ class Batch {
     required this.endDate,
     required this.timings,
     required this.studentIds,
+    this.fee = 0.0,
     this.scheduleDays = const [1, 2, 3, 4, 5, 6, 7],
   });
 
@@ -101,6 +103,7 @@ class Batch {
     DateTime? endDate,
     String? timings,
     List<String>? studentIds,
+    double? fee,
     List<int>? scheduleDays,
   }) {
     return Batch(
@@ -110,6 +113,7 @@ class Batch {
       endDate: endDate ?? this.endDate,
       timings: timings ?? this.timings,
       studentIds: studentIds ?? this.studentIds,
+      fee: fee ?? this.fee,
       scheduleDays: scheduleDays ?? this.scheduleDays,
     );
   }
@@ -121,6 +125,7 @@ class Batch {
       'endDate': Timestamp.fromDate(endDate),
       'timings': timings,
       'studentIds': studentIds,
+      'fee': fee,
       'scheduleDays': scheduleDays,
     };
   }
@@ -140,6 +145,7 @@ class Batch {
           endTs?.toDate() ?? DateTime.now().add(const Duration(days: 90)),
       timings: data['timings'] as String? ?? '',
       studentIds: rawIds.map((e) => e.toString()).toList(),
+      fee: (data['fee'] as num?)?.toDouble() ?? 0.0,
       scheduleDays: rawDays.map((e) => (e as num).toInt()).toList(),
     );
   }

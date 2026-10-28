@@ -393,6 +393,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 batchName: batch.name,
                 scheduleDescription: batch.scheduleDescription,
                 timeSlot: batch.timings,
+                fee: batch.fee,
                 dateRange:
                     '${_formatShortDate(batch.startDate)} – ${_formatShortDate(batch.endDate)}',
                 scheduleDateLabel: _formatShortDate(_selectedDate),
@@ -422,6 +423,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   .where((inq) => batch.studentIds.contains(inq.id))
                   .toList();
               final isWithinRange = batch.isWithinDateRange(_selectedDate);
+              final feeLabel = batch.fee > 0
+                  ? 'Fees: ₹${batch.fee.toStringAsFixed(0)} • '
+                  : '';
               final reasonText = isWithinRange
                   ? 'Runs ${batch.scheduleDescription} (No class on ${_formatWeekday(_selectedDate)})'
                   : 'Batch duration: ${_formatShortDate(batch.startDate)} – ${_formatShortDate(batch.endDate)}';
@@ -437,7 +441,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   subtitle: Padding(
                     padding: const EdgeInsets.only(top: 4),
                     child: Text(
-                      '${batch.scheduleDescription} • ${batch.timings} • ${enrolledStudents.length} Student(s)\n$reasonText',
+                      '$feeLabel${batch.scheduleDescription} • ${batch.timings} • ${enrolledStudents.length} Student(s)\n$reasonText',
                       style: const TextStyle(fontSize: 13),
                     ),
                   ),
@@ -667,6 +671,7 @@ class _TodayClassTile extends StatelessWidget {
   final String batchName;
   final String scheduleDescription;
   final String timeSlot;
+  final double fee;
   final String dateRange;
   final String scheduleDateLabel;
   final int studentCount;
@@ -679,6 +684,7 @@ class _TodayClassTile extends StatelessWidget {
     required this.batchName,
     required this.scheduleDescription,
     required this.timeSlot,
+    this.fee = 0.0,
     required this.dateRange,
     required this.scheduleDateLabel,
     required this.studentCount,
@@ -743,6 +749,26 @@ class _TodayClassTile extends StatelessWidget {
                           ],
                         ),
                       ),
+                      if (fee > 0)
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.currency_rupee_rounded,
+                              size: 15,
+                              color: Color(0xFF047857),
+                            ),
+                            const SizedBox(width: 2),
+                            Text(
+                              '₹${fee.toStringAsFixed(0)}',
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF047857),
+                              ),
+                            ),
+                          ],
+                        ),
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [

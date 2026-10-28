@@ -15,6 +15,7 @@ class LocalBatchesNotifier extends StateNotifier<List<Batch>> {
             endDate: DateTime.now().add(const Duration(days: 75)),
             timings: '09:30 AM - 11:00 AM',
             studentIds: const ['inq-4', 'inq-5'],
+            fee: 15000.0,
             scheduleDays: const [1, 2, 3, 4, 5], // Weekdays (Mon-Fri)
           ),
           Batch(
@@ -24,6 +25,7 @@ class LocalBatchesNotifier extends StateNotifier<List<Batch>> {
             endDate: DateTime.now().add(const Duration(days: 80)),
             timings: '11:30 AM - 01:00 PM',
             studentIds: const ['inq-6'],
+            fee: 22000.0,
             scheduleDays: const [6, 7], // Weekends (Sat-Sun)
           ),
           Batch(
@@ -33,6 +35,7 @@ class LocalBatchesNotifier extends StateNotifier<List<Batch>> {
             endDate: DateTime.now().add(const Duration(days: 90)),
             timings: '02:00 PM - 04:30 PM',
             studentIds: const ['inq-4', 'inq-6'],
+            fee: 8500.0,
             scheduleDays: const [7], // Every Sunday
           ),
         ]);
@@ -42,6 +45,13 @@ class LocalBatchesNotifier extends StateNotifier<List<Batch>> {
       id: 'batch-${DateTime.now().millisecondsSinceEpoch}',
     );
     state = [created, ...state];
+  }
+
+  void updateBatch(Batch updated) {
+    state = [
+      for (final b in state)
+        if (b.id == updated.id) updated else b,
+    ];
   }
 
   void updateBatchStudents(String batchId, List<String> studentIds) {
@@ -122,11 +132,24 @@ class BatchRepository {
     await _logger.log(
       actorName: 'Owner',
       action:
-          'Created batch "${batch.name}" (${batch.scheduleDescription}, ${batch.timings}) with ${batch.studentIds.length} joined student(s)',
+          'Created batch "${batch.name}" (Fees: ₹${batch.fee.toStringAsFixed(0)}, ${batch.scheduleDescription}, ${batch.timings}) with ${batch.studentIds.length} joined student(s)',
       category: 'Batches',
     );
     if (_collection != null) {
       await _collection!.add(batch.toMap());
+    }
+  }
+
+  Future<void> updateBatch(Batch batch) async {
+    _localNotifier.updateBatch(batch);
+    await _logger.log(
+      actorName: 'Owner',
+      action:
+          'Updated batch "${batch.name}" (Fees: ₹${batch.fee.toStringAsFixed(0)}, ${batch.scheduleDescription}, ${batch.timings})',
+      category: 'Batches',
+    );
+    if (_collection != null) {
+      await _collection!.doc(batch.id).update(batch.toMap());
     }
   }
 
