@@ -25,7 +25,7 @@ jobs:
 
       - name: Build Web
         run: |
-          flutter build web --release --base-href "/academycrm/"
+          flutter build web --release --base-href "/campuscrm/"
           cp build/web/index.html build/web/404.html
           ln -sfn . build/web/academycrm
           ln -sfn . build/web/campuscrm

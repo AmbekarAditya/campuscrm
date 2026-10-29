@@ -2,6 +2,19 @@
 <html>
 <head>
   <base href="$FLUTTER_BASE_HREF">
+  <script>
+    // Automatically adapt base href to current URL path (supports /campuscrm/, /academycrm/, custom domains)
+    (function () {
+      var path = window.location.pathname;
+      if (!path.endsWith('/')) {
+        path = path.substring(0, path.lastIndexOf('/') + 1);
+      }
+      var base = document.querySelector('base');
+      if (base && path) {
+        base.href = path;
+      }
+    })();
+  </script>
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
