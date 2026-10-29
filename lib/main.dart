@@ -93,11 +93,13 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
           if (isWideScreen)
             Container(
               decoration: const BoxDecoration(
+                color: Color(0xFFF1F5F9),
                 border: Border(
                   right: BorderSide(color: Color(0xFFE2E8F0), width: 1.2),
                 ),
               ),
               child: NavigationRail(
+                backgroundColor: const Color(0xFFF1F5F9),
                 minExtendedWidth: 260,
                 minWidth: 76,
                 extended: isExtended,
@@ -284,7 +286,7 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
                         TextSpan(
                           text: 'CRM',
                           style: TextStyle(
-                            color: Color(0xFF4F46E5),
+                            color: Color(0xFF3730A3),
                             fontWeight: FontWeight.w900,
                           ),
                         ),
@@ -297,7 +299,7 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF64748B),
+                      color: Color(0xFF475569),
                     ),
                   ),
                 ],

@@ -72,52 +72,52 @@ class AppTheme {
         ),
       ),
       navigationRailTheme: NavigationRailThemeData(
-        backgroundColor: Colors.white,
+        backgroundColor: const Color(0xFFF1F5F9), // Soft darker shade for drawer
         elevation: 0,
         indicatorColor: primaryContainer,
         indicatorShape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),
-        selectedIconTheme: const IconThemeData(size: 25, color: primaryColor),
+        selectedIconTheme: const IconThemeData(size: 25, color: primaryDark),
         unselectedIconTheme:
-            const IconThemeData(size: 25, color: Color(0xFF64748B)),
+            const IconThemeData(size: 25, color: Color(0xFF475569)),
         selectedLabelTextStyle: const TextStyle(
           fontSize: 15.5,
           fontWeight: FontWeight.w700,
-          color: primaryColor,
+          color: primaryDark, // Soft darker shade (Indigo 800)
           letterSpacing: -0.2,
         ),
         unselectedLabelTextStyle: const TextStyle(
           fontSize: 15,
           fontWeight: FontWeight.w600,
-          color: Color(0xFF334155),
+          color: Color(0xFF1E293B), // Soft darker shade (Slate 800)
           letterSpacing: -0.2,
         ),
       ),
       navigationBarTheme: NavigationBarThemeData(
         height: 68,
         elevation: 2,
-        backgroundColor: Colors.white,
+        backgroundColor: const Color(0xFFF1F5F9),
         indicatorColor: primaryContainer,
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
         iconTheme: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return const IconThemeData(size: 24, color: primaryColor);
+            return const IconThemeData(size: 24, color: primaryDark);
           }
-          return const IconThemeData(size: 24, color: Color(0xFF64748B));
+          return const IconThemeData(size: 24, color: Color(0xFF475569));
         }),
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
             return const TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w700,
-              color: primaryColor,
+              color: primaryDark,
             );
           }
           return const TextStyle(
             fontSize: 12,
-            fontWeight: FontWeight.w500,
-            color: Color(0xFF64748B),
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF1E293B),
           );
         }),
       ),
