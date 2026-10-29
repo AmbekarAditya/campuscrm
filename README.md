@@ -3,7 +3,7 @@
 Cross-platform (Web and Mobile) management system designed for owners of teaching academies, studios, and coaching institutes, built with **Flutter**, **Riverpod**, and **Firebase Cloud Firestore** (offline-first).
 
 ## Live Demo
-- **Web App (GitHub Pages):** [https://ambekaraditya.github.io/campuscrm/](https://ambekaraditya.github.io/campuscrm/) (or `/academycrm/`)
+- **Web App (GitHub Pages):** [https://ambekaraditya.github.io/academycrm/](https://ambekaraditya.github.io/academycrm/) (legacy alias: `/campuscrm/`)
 
 ## Core Features
 1. **Home Dashboard (`lib/features/dashboard`)**:
