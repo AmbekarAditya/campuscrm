@@ -28,17 +28,27 @@ class _InquiriesScreenState extends ConsumerState<InquiriesScreen> {
     final searchQuery = ref.watch(inquirySearchQueryProvider);
     final repository = ref.read(inquiryRepositoryProvider);
 
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final isCompactScreen = screenWidth < 520;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Inquiries & Lead Management'),
+        title: Text(
+          isCompactScreen ? 'Inquiries' : 'Inquiries & Lead Management',
+          style: const TextStyle(fontWeight: FontWeight.w700),
+        ),
         centerTitle: false,
         actions: [
           Padding(
-            padding: const EdgeInsets.only(right: 16),
+            padding: const EdgeInsets.only(right: 12),
             child: ElevatedButton.icon(
               onPressed: () => _showAddInquiryDialog(context, repository),
-              icon: const Icon(Icons.person_add_alt_1_rounded, size: 20),
-              label: const Text('New Inquiry'),
+              icon: const Icon(Icons.person_add_alt_1_rounded, size: 18),
+              label: Text(screenWidth < 400 ? 'New' : 'New Inquiry'),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                minimumSize: const Size(0, 38),
+              ),
             ),
           ),
         ],
@@ -183,7 +193,7 @@ class _InquiriesScreenState extends ConsumerState<InquiriesScreen> {
                             crossAxisCount: isVeryWide ? 3 : 2,
                             crossAxisSpacing: 12,
                             mainAxisSpacing: 8,
-                            mainAxisExtent: 215,
+                            mainAxisExtent: 260,
                           ),
                           itemCount: filtered.length,
                           itemBuilder: (context, index) {

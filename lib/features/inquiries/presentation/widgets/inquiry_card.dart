@@ -168,21 +168,22 @@ class _InquiryCardState extends State<InquiryCard> {
     final isDueToday = isFollowUp && _isToday(followUpDate);
 
     return Card(
+      margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 0),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final isBounded = constraints.hasBoundedHeight;
+            final cardWidth = constraints.maxWidth;
+            // On mobile / narrow screens (< 480px), layout header, status, notes, and actions in spacious stacked rows
+            final isCompact = cardWidth < 480;
+
             return Column(
-              mainAxisSize: isBounded ? MainAxisSize.max : MainAxisSize.min,
-              mainAxisAlignment: isBounded
-                  ? MainAxisAlignment.spaceBetween
-                  : MainAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Top Row: Avatar + Name + Phone/Location + Status Dropdown
+                // 1. Header Row (Avatar + Name & Contacts + Delete button / Status on wide)
                 Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     // Student Initials Avatar
                     Container(
@@ -192,7 +193,7 @@ class _InquiryCardState extends State<InquiryCard> {
                         color: status.backgroundColor,
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: status.foregroundColor.withValues(alpha: 0.3),
+                          color: status.foregroundColor.withValues(alpha: 0.35),
                           width: 1.2,
                         ),
                       ),
@@ -200,23 +201,24 @@ class _InquiryCardState extends State<InquiryCard> {
                       child: Text(
                         _getInitials(inquiry.name),
                         style: TextStyle(
-                          fontSize: 13,
+                          fontSize: 12.5,
                           fontWeight: FontWeight.w800,
                           color: status.foregroundColor,
                         ),
                       ),
                     ),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: 8),
 
-                    // Name, Phone & Location
+                    // Name, Phone & Location (Full available width in Expanded)
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
                             inquiry.name,
                             style: const TextStyle(
-                              fontSize: 15,
+                              fontSize: 14.5,
                               fontWeight: FontWeight.w700,
                               color: Color(0xFF0F172A),
                               height: 1.2,
@@ -224,7 +226,7 @@ class _InquiryCardState extends State<InquiryCard> {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
-                          const SizedBox(height: 3),
+                          const SizedBox(height: 2),
                           Wrap(
                             spacing: 8,
                             runSpacing: 2,
@@ -236,16 +238,19 @@ class _InquiryCardState extends State<InquiryCard> {
                                   children: [
                                     const Icon(
                                       Icons.phone_outlined,
-                                      size: 12,
+                                      size: 11.5,
                                       color: Color(0xFF64748B),
                                     ),
                                     const SizedBox(width: 3),
-                                    Text(
-                                      inquiry.phone,
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w500,
-                                        color: Color(0xFF475569),
+                                    Flexible(
+                                      child: Text(
+                                        inquiry.phone,
+                                        style: const TextStyle(
+                                          fontSize: 11.5,
+                                          fontWeight: FontWeight.w500,
+                                          color: Color(0xFF475569),
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
                                       ),
                                     ),
                                   ],
@@ -256,19 +261,21 @@ class _InquiryCardState extends State<InquiryCard> {
                                   children: [
                                     const Icon(
                                       Icons.location_on_outlined,
-                                      size: 12,
+                                      size: 11.5,
                                       color: Color(0xFF64748B),
                                     ),
                                     const SizedBox(width: 2),
-                                    Text(
-                                      inquiry.areaCity,
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w500,
-                                        color: Color(0xFF64748B),
+                                    Flexible(
+                                      child: Text(
+                                        inquiry.areaCity,
+                                        style: const TextStyle(
+                                          fontSize: 11.5,
+                                          fontWeight: FontWeight.w500,
+                                          color: Color(0xFF64748B),
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
                                       ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
                                     ),
                                   ],
                                 ),
@@ -277,70 +284,12 @@ class _InquiryCardState extends State<InquiryCard> {
                         ],
                       ),
                     ),
-                    const SizedBox(width: 8),
 
-                    // Compact Color-Coded Status Dropdown
-                    Container(
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: status.backgroundColor,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: status.foregroundColor.withValues(alpha: 0.35),
-                          width: 1.2,
-                        ),
-                      ),
-                      child: DropdownButtonHideUnderline(
-                        child: DropdownButton<InquiryStatus>(
-                          value: status,
-                          isDense: true,
-                          icon: Icon(
-                            Icons.keyboard_arrow_down_rounded,
-                            size: 18,
-                            color: status.foregroundColor,
-                          ),
-                          borderRadius: BorderRadius.circular(10),
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: status.foregroundColor,
-                          ),
-                          onChanged: (InquiryStatus? newStatus) {
-                            if (newStatus != null && newStatus != status) {
-                              _handleStatusChange(newStatus);
-                            }
-                          },
-                          items: InquiryStatus.values.map((itemStatus) {
-                            return DropdownMenuItem<InquiryStatus>(
-                              value: itemStatus,
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Container(
-                                    width: 7,
-                                    height: 7,
-                                    decoration: BoxDecoration(
-                                      color: itemStatus.foregroundColor,
-                                      shape: BoxShape.circle,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    itemStatus.label,
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: itemStatus.foregroundColor,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                      ),
-                    ),
+                    if (!isCompact) ...[
+                      const SizedBox(width: 8),
+                      _buildStatusDropdown(status),
+                    ],
+
                     if (widget.onDelete != null) ...[
                       const SizedBox(width: 4),
                       IconButton(
@@ -360,72 +309,33 @@ class _InquiryCardState extends State<InquiryCard> {
                   ],
                 ),
 
-                // Follow-Up Date Tag on Card (if status is Follow-Up)
-                if (isFollowUp) ...[
-                  if (!isBounded) const SizedBox(height: 6),
-                  InkWell(
-                    onTap: () => _pickFollowUpDate(context),
-                    borderRadius: BorderRadius.circular(8),
-                    child: Container(
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: isDueToday
-                            ? const Color(0xFFFEF3C7)
-                            : const Color(0xFFF1F5F9),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: isDueToday
-                              ? const Color(0xFFF59E0B)
-                              : const Color(0xFFCBD5E1),
-                          width: 1,
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.event_repeat_rounded,
-                            size: 13,
-                            color: isDueToday
-                                ? const Color(0xFFB45309)
-                                : const Color(0xFF475569),
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            isDueToday
-                                ? 'Follow-Up: Today (${_formatDate(followUpDate)})'
-                                : 'Follow-Up Date: ${_formatDate(followUpDate)}',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: isDueToday
-                                  ? const Color(0xFF92400E)
-                                  : const Color(0xFF334155),
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          Icon(
-                            Icons.edit_calendar_rounded,
-                            size: 12,
-                            color: isDueToday
-                                ? const Color(0xFFB45309)
-                                : const Color(0xFF64748B),
-                          ),
-                        ],
-                      ),
-                    ),
+                // 2. Status & Follow-Up Section
+                if (isCompact) ...[
+                  const SizedBox(height: 6),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 4,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      _buildStatusDropdown(status),
+                      if (isFollowUp)
+                        _buildFollowUpBadge(followUpDate, isDueToday),
+                    ],
                   ),
+                ] else if (isFollowUp) ...[
+                  const SizedBox(height: 5),
+                  _buildFollowUpBadge(followUpDate, isDueToday),
                 ],
 
-                if (!isBounded) const SizedBox(height: 6),
+                const SizedBox(height: 6),
 
-                // Compact Remarks TextField with inline Save button
+                // 3. Compact Remarks TextField with inline Save button
                 TextField(
                   controller: _remarksController,
                   maxLines: 1,
                   textInputAction: TextInputAction.done,
-                  style: const TextStyle(fontSize: 12.5, color: Color(0xFF1E293B)),
+                  style:
+                      const TextStyle(fontSize: 12, color: Color(0xFF1E293B)),
                   onChanged: (value) {
                     setState(() {
                       _isRemarksDirty = value != inquiry.remarks;
@@ -441,22 +351,23 @@ class _InquiryCardState extends State<InquiryCard> {
                         ? 'Add follow-up notes...'
                         : inquiry.remarks,
                     hintStyle: TextStyle(
-                      fontSize: 12,
+                      fontSize: 11.5,
                       color: inquiry.remarks.isEmpty
                           ? const Color(0xFF94A3B8)
                           : const Color(0xFF334155),
                     ),
                     contentPadding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     suffixIcon: _isRemarksDirty
                         ? IconButton(
-                            iconSize: 18,
+                            iconSize: 17,
                             padding: EdgeInsets.zero,
                             constraints:
-                                const BoxConstraints(minWidth: 28, minHeight: 28),
+                                const BoxConstraints(minWidth: 26, minHeight: 26),
                             tooltip: 'Save Remarks',
                             onPressed: () {
-                              widget.onRemarksSaved(_remarksController.text.trim());
+                              widget
+                                  .onRemarksSaved(_remarksController.text.trim());
                               setState(() => _isRemarksDirty = false);
                               FocusScope.of(context).unfocus();
                             },
@@ -469,11 +380,11 @@ class _InquiryCardState extends State<InquiryCard> {
                   ),
                 ),
 
-                if (!isBounded) const SizedBox(height: 6),
+                const SizedBox(height: 6),
                 const Divider(height: 1, color: Color(0xFFF1F5F9)),
-                if (!isBounded) const SizedBox(height: 6),
+                const SizedBox(height: 6),
 
-                // Row of 4 1-Click Action Icon Buttons
+                // 4. Row of 4 1-Click Action Icon Buttons
                 Row(
                   children: [
                     Expanded(
@@ -488,7 +399,7 @@ class _InquiryCardState extends State<InquiryCard> {
                         ),
                       ),
                     ),
-                    const SizedBox(width: 6),
+                    const SizedBox(width: 5),
                     Expanded(
                       child: _ActionIconButton(
                         icon: Icons.chat_bubble_rounded,
@@ -496,7 +407,8 @@ class _InquiryCardState extends State<InquiryCard> {
                         color: const Color(0xFF16A34A),
                         backgroundColor: const Color(0xFFF0FDF4),
                         onPressed: () {
-                          final cleanPhone = _sanitizeWhatsAppNumber(inquiry.phone);
+                          final cleanPhone =
+                              _sanitizeWhatsAppNumber(inquiry.phone);
                           _launchActionUrl(
                             context,
                             Uri.parse('https://wa.me/$cleanPhone'),
@@ -504,7 +416,7 @@ class _InquiryCardState extends State<InquiryCard> {
                         },
                       ),
                     ),
-                    const SizedBox(width: 6),
+                    const SizedBox(width: 5),
                     Expanded(
                       child: _ActionIconButton(
                         icon: Icons.email_outlined,
@@ -517,7 +429,7 @@ class _InquiryCardState extends State<InquiryCard> {
                         ),
                       ),
                     ),
-                    const SizedBox(width: 6),
+                    const SizedBox(width: 5),
                     Expanded(
                       child: _ActionIconButton(
                         icon: Icons.location_pin,
@@ -529,7 +441,8 @@ class _InquiryCardState extends State<InquiryCard> {
                               Uri.encodeComponent(inquiry.areaCity);
                           _launchActionUrl(
                             context,
-                            Uri.parse('https://maps.google.com/?q=$encodedLocation'),
+                            Uri.parse(
+                                'https://maps.google.com/?q=$encodedLocation'),
                           );
                         },
                       ),
@@ -539,6 +452,128 @@ class _InquiryCardState extends State<InquiryCard> {
               ],
             );
           },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatusDropdown(InquiryStatus status) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: status.backgroundColor,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: status.foregroundColor.withValues(alpha: 0.35),
+          width: 1.2,
+        ),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<InquiryStatus>(
+          value: status,
+          isDense: true,
+          icon: Icon(
+            Icons.keyboard_arrow_down_rounded,
+            size: 18,
+            color: status.foregroundColor,
+          ),
+          borderRadius: BorderRadius.circular(10),
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            color: status.foregroundColor,
+          ),
+          onChanged: (InquiryStatus? newStatus) {
+            if (newStatus != null && newStatus != status) {
+              _handleStatusChange(newStatus);
+            }
+          },
+          items: InquiryStatus.values.map((itemStatus) {
+            return DropdownMenuItem<InquiryStatus>(
+              value: itemStatus,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 7,
+                    height: 7,
+                    decoration: BoxDecoration(
+                      color: itemStatus.foregroundColor,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    itemStatus.label,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: itemStatus.foregroundColor,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFollowUpBadge(DateTime followUpDate, bool isDueToday) {
+    return InkWell(
+      onTap: () => _pickFollowUpDate(context),
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: isDueToday
+              ? const Color(0xFFFEF3C7)
+              : const Color(0xFFF1F5F9),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isDueToday
+                ? const Color(0xFFF59E0B)
+                : const Color(0xFFCBD5E1),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.event_repeat_rounded,
+              size: 13,
+              color: isDueToday
+                  ? const Color(0xFFB45309)
+                  : const Color(0xFF475569),
+            ),
+            const SizedBox(width: 4),
+            Flexible(
+              child: Text(
+                isDueToday
+                    ? 'Follow-Up: Today (${_formatDate(followUpDate)})'
+                    : 'Follow-Up Date: ${_formatDate(followUpDate)}',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: isDueToday
+                      ? const Color(0xFF92400E)
+                      : const Color(0xFF334155),
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const SizedBox(width: 4),
+            Icon(
+              Icons.edit_calendar_rounded,
+              size: 12,
+              color: isDueToday
+                  ? const Color(0xFFB45309)
+                  : const Color(0xFF64748B),
+            ),
+          ],
         ),
       ),
     );
